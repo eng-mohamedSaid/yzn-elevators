@@ -196,17 +196,17 @@ export const Offers: React.FC = () => {
                 <div className="flex gap-2 w-full sm:w-auto">
                     <button 
                         onClick={() => setIsDownloadRangeOpen(true)}
-                        className="flex-1 sm:flex-none bg-white border border-line text-secondary font-bold px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-bg transition-colors"
+                        className="flex-1 sm:flex-none bg-white border border-line text-secondary font-bold px-3 sm:px-4 py-2 sm:py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-bg transition-colors"
                     >
-                        <Download size={18} />
-                        تحميل العروض
+                        <Download size={16} />
+                        <span className="hidden sm:inline">تحميل العروض</span>
                     </button>
                     <button 
                         onClick={() => { resetForm(); setIsAddModalOpen(true); }}
-                        className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-2 shadow-sm"
+                        className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-2 shadow-sm px-3 sm:px-4"
                     >
-                        <Plus size={20} />
-                        إضافة عرض جديد
+                        <Plus size={18} />
+                        <span className="hidden sm:inline">عرض</span>
                     </button>
                 </div>
             </div>
@@ -222,7 +222,7 @@ export const Offers: React.FC = () => {
                     <button
                         key={type.key}
                         onClick={() => setSearchType(type.key as any)}
-                        className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all border ${
+                        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full whitespace-nowrap text-xs sm:text-sm font-medium transition-all border ${
                             searchType === type.key 
                                 ? 'bg-secondary text-white border-secondary' 
                                 : 'bg-white text-gray-500 border-gray-200'
@@ -235,11 +235,11 @@ export const Offers: React.FC = () => {
 
             {/* Search Bar */}
             <div className="relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                     type="text"
                     placeholder={`ابحث عن عرض بـ ${searchType === 'customerName' ? 'اسم العميل' : searchType === 'offerNumber' ? 'رقم العرض' : searchType === 'phone' ? 'رقم التليفون' : 'العنوان'}...`}
-                    className="w-full bg-white border border-gray-200 rounded-xl py-4 pr-12 pl-4 focus:border-primary outline-none shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl py-3 sm:py-4 pr-11 sm:pr-12 pl-3 sm:pl-4 focus:border-primary outline-none shadow-sm text-sm"
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                 />
@@ -366,7 +366,7 @@ export const Offers: React.FC = () => {
                 </div>
 
                 <div className="col-span-1 sm:col-span-3 mt-6 flex gap-3">
-                   <button onClick={handleCreate} className="flex-1 btn-primary py-4 rounded-xl shadow-sm">إضافة العرض الآن</button>
+                   <button onClick={handleCreate} className="flex-1 btn-primary py-4 rounded-xl shadow-sm">إضافة العرض</button>
                    <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl">إلغاء</button>
                 </div>
               </div>
@@ -379,14 +379,14 @@ export const Offers: React.FC = () => {
                 title={isEditMode ? "تعديل بيانات العرض" : "تفاصيل عرض السعر"}
                 size="full"
                 footer={
-                    <div className="flex flex-wrap gap-2 w-full">
+                    <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 w-full">
                         {!isEditMode ? (
                             <>
                                 <button 
                                     onClick={() => setIsConfirmEditOpen(true)} 
-                                    className="bg-accent/10 text-accent font-bold px-6 py-3 rounded-xl flex items-center gap-2 border border-accent/20 hover:bg-accent/20 transition-colors"
+                                    className="bg-accent/10 text-accent font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-accent/20 hover:bg-accent/20 transition-colors"
                                 >
-                                    <Edit3 size={18} /> تفعيل التعديل
+                                    <Edit3 size={16} /> <span className="hidden sm:inline">تفعيل التعديل</span>
                                 </button>
                                 <button 
                                     onClick={() => exportService.toPDF([selectedOffer], [
@@ -397,34 +397,34 @@ export const Offers: React.FC = () => {
                                         { header: 'المصعد', dataKey: 'elevatorType' },
                                         { header: 'السعر', dataKey: 'price' }
                                     ], 'عرض_سعر')}
-                                    className="bg-primary/5 text-primary font-bold px-6 py-3 rounded-xl flex items-center gap-2 border border-line hover:bg-primary/10 transition-colors"
+                                    className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
-                                    <Download size={18} /> PDF
+                                    <Download size={16} /> <span className="hidden sm:inline">PDF</span>
                                 </button>
                                 <button 
                                     onClick={() => exportService.toWord(selectedOffer!, 'العرض')}
-                                    className="bg-primary/5 text-primary font-bold px-6 py-3 rounded-xl flex items-center gap-2 border border-line hover:bg-primary/10 transition-colors"
+                                    className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
-                                    <FileDigit size={18} /> Word
+                                    <FileDigit size={16} /> <span className="hidden sm:inline">Word</span>
                                 </button>
                                 <button 
                                     onClick={() => setIsConfirmDeleteOpen(true)} 
-                                    className="bg-red-50 text-red-600 font-bold px-6 py-3 rounded-xl flex items-center gap-2 border border-red-100 hover:bg-red-100 transition-colors mr-auto"
+                                    className="bg-red-50 text-red-600 font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100 transition-colors sm:mr-auto col-span-2 sm:col-span-auto"
                                 >
-                                    <Trash2 size={18} /> حذف
+                                    <Trash2 size={16} /> <span className="hidden sm:inline">حذف</span>
                                 </button>
                             </>
                         ) : (
                             <>
                                 <button 
                                     onClick={handleUpdate} 
-                                    className="flex-1 btn-primary py-3 rounded-xl shadow-sm"
+                                    className="col-span-2 sm:col-span-auto flex-1 btn-primary py-3 rounded-xl shadow-sm"
                                 >
                                     حفظ التغييرات
                                 </button>
                                 <button 
                                     onClick={() => setIsEditMode(false)} 
-                                    className="flex-1 bg-bg text-secondary border border-line font-bold py-3 rounded-xl hover:bg-line transition-colors"
+                                    className="col-span-2 sm:col-span-auto flex-1 bg-bg text-secondary border border-line font-bold py-3 rounded-xl hover:bg-line transition-colors"
                                 >
                                     إلغاء
                                 </button>

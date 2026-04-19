@@ -27,7 +27,7 @@ export const Input: React.FC<InputProps> = ({
         value={value}
         placeholder={placeholder || '...'}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-white border border-line rounded-xl p-3 outline-none focus:border-accent transition-all shadow-sm text-sm font-bold min-h-[46px]"
+        className="w-full bg-white border border-line rounded-xl p-2.5 sm:p-3 outline-none focus:border-accent transition-all shadow-sm text-sm font-bold min-h-[44px] sm:min-h-[46px]"
       />
       {suffix && (
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-accent">

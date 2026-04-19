@@ -90,7 +90,7 @@ export const Maintenance: React.FC = () => {
                     className="btn-primary flex items-center gap-2"
                 >
                     <Plus size={20} />
-                    إضافة عقد صيانة
+                     عقد صيانة
                 </button>
             </div>
 

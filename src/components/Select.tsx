@@ -24,7 +24,7 @@ export const Select: React.FC<SelectProps> = ({
       <select 
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="peer w-full bg-white border border-line rounded-xl p-3 outline-none focus:border-accent transition-all shadow-sm text-sm font-bold appearance-none cursor-pointer pr-10 min-h-[46px]"
+        className="peer w-full bg-white border border-line rounded-xl p-2.5 sm:p-3 outline-none focus:border-accent transition-all shadow-sm text-sm font-bold appearance-none cursor-pointer pr-10 min-h-[44px] sm:min-h-[46px]"
       >
         <option value="" disabled>{placeholder}</option>
         {options.map((opt) => (

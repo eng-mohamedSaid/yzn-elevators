@@ -46,7 +46,6 @@ export const Dashboard: React.FC = () => {
           >
             <span className="text-[13px] text-secondary mb-2 block">{card.title}</span>
             <div className="text-2xl font-bold group-hover:text-accent transition-colors">{card.count}</div>
-            <div className="text-[12px] mt-1 text-green-600 font-medium">+5% هذا الشهر</div>
           </div>
         ))}
       </div>

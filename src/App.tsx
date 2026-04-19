@@ -23,10 +23,10 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="offers" element={<Offers />} />
             <Route path="maintenance" element={<Maintenance />} />
-            <Route path="sites" element={<Sites />} />
+            {/* <Route path="sites" element={<Sites />} />
             <Route path="sites/:id" element={<SiteDetails />} />
             <Route path="workers" element={<Workers />} />
-            <Route path="workers/:id" element={<WorkerDetails />} />
+            <Route path="workers/:id" element={<WorkerDetails />} /> */}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -62,19 +62,19 @@ export const Workers: React.FC = () => {
                 </h1>
                 <button 
                     onClick={() => { resetForm(); setIsAddModalOpen(true); }}
-                    className="btn-primary flex items-center gap-2 shadow-sm"
+                    className="btn-primary flex items-center justify-center gap-2 shadow-sm px-3 sm:px-4"
                 >
-                    <Plus size={20} />
-                    إضافة موظف
+                    <Plus size={18} />
+                    <span className="hidden sm:inline">موظف</span>
                 </button>
             </div>
 
             <div className="relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                     type="text"
                     placeholder="ابحث باسم الموظف..."
-                    className="w-full bg-white border rounded-xl py-4 pr-12 outline-none shadow-sm"
+                    className="w-full bg-white border rounded-xl py-3 sm:py-4 pr-11 sm:pr-12 pl-3 sm:pl-4 outline-none shadow-sm text-sm"
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                 />
@@ -107,7 +107,7 @@ export const Workers: React.FC = () => {
                 ))}
             </div>
 
-            <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="إضافة موظف جديد">
+            <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="إضافة موظف">
                 <form onSubmit={handleCreate} className="space-y-4">
                     <Input label="اسم الموظف" placeholder="الاسم الرباعي" value={formData.name || ''} onChange={(val: string) => setFormData({...formData, name: val})} />
                     <Select 

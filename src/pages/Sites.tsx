@@ -83,10 +83,10 @@ export const Sites: React.FC = () => {
                 </h1>
                 <button 
                     onClick={() => { resetForm(); setIsAddModalOpen(true); }}
-                    className="btn-primary flex items-center gap-2 shadow-sm"
+                    className="btn-primary flex items-center justify-center gap-2 shadow-sm px-3 sm:px-4"
                 >
-                    <Plus size={20} />
-                    إضافة موقع جديد
+                    <Plus size={18} />
+                    <span className="hidden sm:inline">موقع</span>
                 </button>
             </div>
 
@@ -99,7 +99,7 @@ export const Sites: React.FC = () => {
                     <button
                         key={type.key}
                         onClick={() => setSearchType(type.key as any)}
-                        className={`px-4 py-2 rounded-full whitespace-nowrap text-sm border font-medium ${searchType === type.key ? 'bg-secondary text-white border-secondary' : 'bg-white text-gray-500 border-gray-100'}`}
+                        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full whitespace-nowrap text-xs sm:text-sm border font-medium ${searchType === type.key ? 'bg-secondary text-white border-secondary' : 'bg-white text-gray-500 border-gray-100'}`}
                     >
                         بحث بـ {type.label}
                     </button>
@@ -107,11 +107,11 @@ export const Sites: React.FC = () => {
             </div>
 
             <div className="relative">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                     type="text"
                     placeholder="ابحث عن موقع..."
-                    className="w-full bg-white border border-gray-100 rounded-xl py-4 pr-12 pl-4 outline-none shadow-sm"
+                    className="w-full bg-white border border-gray-100 rounded-xl py-3 sm:py-4 pr-11 sm:pr-12 pl-3 sm:pl-4 outline-none shadow-sm text-sm"
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                 />
