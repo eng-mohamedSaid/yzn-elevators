@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-cairo: "Cairo", sans-serif;
+
+  --color-primary: #0f172a;
+  --color-secondary: #64748b;
+  --color-accent: #ca8a04;
+  --color-line: #e2e8f0;
+  --color-bg: #f8fafc;
+  
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer base {
+  html {
+    direction: rtl;
+    font-family: inherit;
+  }
+  
+  body {
+    @apply bg-bg text-primary font-cairo;
+  }
+}
+
+/* Component Styles */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-line p-6 transition-all;
+}
+
+.btn-primary {
+  @apply bg-accent text-white font-medium px-4 py-2 rounded-lg transition-colors hover:opacity-90 active:scale-95;
+}
+
+.table-header {
+  @apply bg-[#fcfcfc] px-6 py-3 text-xs font-semibold text-secondary uppercase border-b border-line;
+}
+
+.badge {
+  @apply px-2 py-1 rounded-md text-[11px] font-bold;
+}
+
+.badge-success { @apply bg-[#dcfce7] text-[#166534]; }
+.badge-warning { @apply bg-[#fef9c3] text-[#854d0e]; }
+
+/* Navigation Styles */
+.nav-item-desktop {
+  @apply flex items-center gap-3 px-6 py-3 text-sm text-white/70 transition-all border-r-4 border-transparent;
+}
+
+.nav-item-desktop.active {
+  @apply bg-white/10 text-white border-accent;
+}
+
+.mobile-nav-item.active {
+  color: var(--color-accent) !important;
+}
+
+/* Layout Utilities */
+.chips-row {
+  @apply flex gap-3 overflow-x-auto pb-2 -mx-4 px-4;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chips-row::-webkit-scrollbar {
+  display: none;
+}
+
