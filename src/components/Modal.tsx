@@ -54,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
             
             {footer && (
-              <div className="p-6 border-t border-line bg-white sticky bottom-0 z-10 flex gap-3">
+              <div className="p-4 md:p-6 border-t border-line bg-white sticky bottom-0 z-10 flex gap-3">
                 {footer}
               </div>
             )}

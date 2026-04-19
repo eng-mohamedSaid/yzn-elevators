@@ -370,12 +370,12 @@ export const Offers: React.FC = () => {
                 title={isEditMode ? "تعديل بيانات العرض" : "تفاصيل عرض السعر"}
                 size="full"
                 footer={
-                    <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 w-full">
+                    <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 w-full text-sm md:text-lg">
                         {!isEditMode ? (
                             <>
                                 <button 
                                     onClick={() => setIsConfirmEditOpen(true)} 
-                                    className="bg-accent/10 text-accent font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-accent/20 hover:bg-accent/20 transition-colors"
+                                    className="bg-accent/10 text-accent font-bold px-1 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-1 md:gap-2 border border-accent/20 hover:bg-accent/20 transition-colors"
                                 >
                                     <Edit3 size={16} /> <span>تفعيل التعديل</span>
                                 </button>
@@ -388,19 +388,19 @@ export const Offers: React.FC = () => {
                                         { header: 'المصعد', dataKey: 'elevatorType' },
                                         { header: 'السعر', dataKey: 'price' }
                                     ], 'عرض_سعر')}
-                                    className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
+                                    className="bg-primary/5 text-primary font-bold px-1 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-1 md:gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
                                     <Download size={16} /> <span>PDF</span>
                                 </button>
                                 <button 
                                     onClick={() => exportService.toWord(selectedOffer!, 'العرض')}
-                                    className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
+                                    className="bg-primary/5 text-primary font-bold px-1 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-1 md:gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
                                     <FileDigit size={16} /> <span>Word</span>
                                 </button>
                                 <button 
                                     onClick={() => setIsConfirmDeleteOpen(true)} 
-                                    className="bg-red-50 text-red-600 font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100 transition-colors sm:mr-auto col-span-2 sm:col-span-auto"
+                                    className="bg-red-50 text-red-600 font-bold px-1 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-1 md:gap-2 border border-red-100 hover:bg-red-100 transition-colors"
                                 >
                                     <Trash2 size={16} /> <span>حذف</span>
                                 </button>
