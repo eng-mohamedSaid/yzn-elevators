@@ -196,17 +196,17 @@ export const Offers: React.FC = () => {
                 <div className="flex gap-2 w-full sm:w-auto">
                     <button 
                         onClick={() => setIsDownloadRangeOpen(true)}
-                        className="flex-1 sm:flex-none bg-white border border-line text-secondary font-bold px-3 sm:px-4 py-2 sm:py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-bg transition-colors"
+                        className="text-sm md:text-lg flex-1 sm:flex-none bg-white border border-line text-secondary font-bold px-2 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-1 md:gap-2 hover:bg-bg transition-colors"
                     >
                         <Download size={16} />
-                        <span className="hidden sm:inline">تحميل العروض</span>
+                         <span>تحميل العروض</span>
                     </button>
                     <button 
                         onClick={() => { resetForm(); setIsAddModalOpen(true); }}
-                        className="flex-1 sm:flex-none btn-primary flex items-center justify-center gap-2 shadow-sm px-3 sm:px-4"
+                        className="text-sm md:text-lg flex-1 sm:flex-none btn-primary flex items-center justify-center gap-1 md:gap-2 shadow-sm px-2 sm:px-4"
                     >
                         <Plus size={18} />
-                        <span className="hidden sm:inline">عرض</span>
+                        <span>عرض جديد</span>
                     </button>
                 </div>
             </div>
@@ -277,16 +277,16 @@ export const Offers: React.FC = () => {
             </div>
 
             {/* Mobile View */}
-            <div className="grid grid-cols-1 gap-4 sm:hidden">
+            <div className="grid grid-cols-1 gap-2 md:gap-4 sm:hidden">
                 {offers.map(offer => (
                     <div 
                         key={offer.id} 
                         onClick={() => openOfferDetails(offer)}
-                        className="card space-y-3 active:scale-95 transition-all"
+                        className="card space-y-1 md:space-y-3 active:scale-95 transition-all"
                     >
                         <div className="flex justify-between items-start">
                             <div>
-                                <span className="badge badge-success mb-2 inline-block">
+                                <span className="badge badge-success mb-0.5 inline-block">
                                     {offer.offerNumber}
                                 </span>
                                 <h3 className="text-lg font-bold">{offer.customerName}</h3>
@@ -309,18 +309,19 @@ export const Offers: React.FC = () => {
               isOpen={isAddModalOpen}
               onClose={() => setIsAddModalOpen(false)}
               title="إضافة عرض سعر جديد"
-              size="lg"
+              size="full"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
                 <Input label="اسم العميل" placeholder="أدخل اسم العميل بالكامل" value={formData.customerName} onChange={val => setFormData({...formData, customerName: val})} />
                 <Input label="رقم التليفون" type="number" placeholder="مثال: 01xxxxxxxxx" value={formData.phone} onChange={val => setFormData({...formData, phone: val})} />
                 <Input label="العنوان" placeholder="أدخل عنوان العميل" value={formData.address} onChange={val => setFormData({...formData, address: val})} />
                 <Input label="رابط الموقع" placeholder="رابط Google Maps" value={formData.locationUrl} onChange={val => setFormData({...formData, locationUrl: val})} />
-                <Input label="التاريخ" type="date" placeholder="اختر التاريخ" value={formData.date} onChange={val => setFormData({...formData, date: val})} />
+              </div>
                 
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4">
+                <Input label="التاريخ" type="date" placeholder="اختر التاريخ" value={formData.date} onChange={val => setFormData({...formData, date: val})} />
                 <Select label="نوع العميل" placeholder="اختر نوع العميل" options={['client', 'company']} value={formData.customerType} onChange={val => setFormData({...formData, customerType: val as any})} />
                 <Select label="نوع المصعد" placeholder="اختر نوع المصعد" options={ELEVATOR_TYPES} value={formData.elevatorType} onChange={val => setFormData({...formData, elevatorType: val})} />
-                
                 <Input label="عدد المصاعد" type="number" placeholder="ادخل العدد" value={formData.elevatorCount} onChange={val => setFormData({...formData, elevatorCount: Number(val)})} />
                 <Input label="الوقفات" type="number" placeholder="عدد الوقفات" value={formData.stops} onChange={val => setFormData({...formData, stops: Number(val)})} />
                 <Input label="الطوابق" type="number" placeholder="عدد الطوابق" value={formData.floors} onChange={val => setFormData({...formData, floors: Number(val)})} />
@@ -347,28 +348,18 @@ export const Offers: React.FC = () => {
                 <Input label="طول البئر" type="number" placeholder="بالسم" value={formData.pitLength} onChange={val => setFormData({...formData, pitLength: Number(val)})} />
                 <Input label="مكان الثقال" placeholder="مثال: خلف" value={formData.counterweightPosition} onChange={val => setFormData({...formData, counterweightPosition: val})} />
                 <Input label="مقاس الكابينة" placeholder="عرض x طول" value={formData.cabinSize} onChange={val => setFormData({...formData, cabinSize: val})} />
+                <Select label="فك المصعد القديم" placeholder="هل يوجد فك؟" options={REMOVAL_OPTIONS} value={formData.oldElevatorRemoval} onChange={val => setFormData({...formData, oldElevatorRemoval: val as any})} />
                 
                 <Input label="السعر" type="number" placeholder="دخل السعر الإجمالي" value={formData.price} onChange={val => setFormData({...formData, price: Number(val)})} suffix="جنيه" />
                 <Input label="المندوب" placeholder="اسم المندوب" value={formData.representative} onChange={val => setFormData({...formData, representative: val})} />
                 
-                <Select label="فك المصعد القديم" placeholder="هل يوجد فك؟" options={REMOVAL_OPTIONS} value={formData.oldElevatorRemoval} onChange={val => setFormData({...formData, oldElevatorRemoval: val as any})} />
-                <Select label="قضبان" placeholder="اختر نوع القضبان" options={RAILS} value={formData.rails} onChange={val => setFormData({...formData, rails: val})} />
-
-                <div className="col-span-1 sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-line pt-4 mt-2">
-                    <DetailField label="ملاحظة 1" value={formData.note1} isEdit={true} type="textarea" onChange={v => setFormData({...formData, note1: v})} />
-                    <DetailField label="ملاحظة 2" value={formData.note2} isEdit={true} type="textarea" onChange={v => setFormData({...formData, note2: v})} />
-                    <DetailField label="ملاحظة 3" value={formData.note3} isEdit={true} type="textarea" onChange={v => setFormData({...formData, note3: v})} />
-                </div>
-                
-                <div className="col-span-1 sm:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <DetailField label="ملاحظات المهندس 1" value={formData.engNotes1} isEdit={true} type="textarea" onChange={v => setFormData({...formData, engNotes1: v})} />
-                    <DetailField label="ملاحظات المهندس 2" value={formData.engNotes2} isEdit={true} type="textarea" onChange={v => setFormData({...formData, engNotes2: v})} />
-                </div>
-
-                <div className="col-span-1 sm:col-span-3 mt-6 flex gap-3">
-                   <button onClick={handleCreate} className="flex-1 btn-primary py-4 rounded-xl shadow-sm">إضافة العرض</button>
-                   <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl">إلغاء</button>
-                </div>
+                <DetailField label="ملاحظة 1" value={formData.note1} isEdit={true} type="textarea" onChange={v => setFormData({...formData, note1: v})} />
+                <DetailField label="ملاحظة 2" value={formData.note2} isEdit={true} type="textarea" onChange={v => setFormData({...formData, note2: v})} />
+                <DetailField label="ملاحظات المهندس" value={formData.engNotes1} isEdit={true} type="textarea" onChange={v => setFormData({...formData, engNotes1: v})} />
+              </div>
+              <div className="col-span-1 sm:col-span-3 mt-6 flex gap-3">
+              <button onClick={handleCreate} className="flex-1 btn-primary py-4 rounded-xl shadow-sm">إضافة العرض</button>
+              <button onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl">إلغاء</button>
               </div>
             </Modal>
 
@@ -386,7 +377,7 @@ export const Offers: React.FC = () => {
                                     onClick={() => setIsConfirmEditOpen(true)} 
                                     className="bg-accent/10 text-accent font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-accent/20 hover:bg-accent/20 transition-colors"
                                 >
-                                    <Edit3 size={16} /> <span className="hidden sm:inline">تفعيل التعديل</span>
+                                    <Edit3 size={16} /> <span>تفعيل التعديل</span>
                                 </button>
                                 <button 
                                     onClick={() => exportService.toPDF([selectedOffer], [
@@ -399,19 +390,19 @@ export const Offers: React.FC = () => {
                                     ], 'عرض_سعر')}
                                     className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
-                                    <Download size={16} /> <span className="hidden sm:inline">PDF</span>
+                                    <Download size={16} /> <span>PDF</span>
                                 </button>
                                 <button 
                                     onClick={() => exportService.toWord(selectedOffer!, 'العرض')}
                                     className="bg-primary/5 text-primary font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-line hover:bg-primary/10 transition-colors"
                                 >
-                                    <FileDigit size={16} /> <span className="hidden sm:inline">Word</span>
+                                    <FileDigit size={16} /> <span>Word</span>
                                 </button>
                                 <button 
                                     onClick={() => setIsConfirmDeleteOpen(true)} 
                                     className="bg-red-50 text-red-600 font-bold px-4 sm:px-6 py-3 rounded-xl flex items-center justify-center gap-2 border border-red-100 hover:bg-red-100 transition-colors sm:mr-auto col-span-2 sm:col-span-auto"
                                 >
-                                    <Trash2 size={16} /> <span className="hidden sm:inline">حذف</span>
+                                    <Trash2 size={16} /> <span>حذف</span>
                                 </button>
                             </>
                         ) : (

@@ -28,7 +28,7 @@
 
 /* Component Styles */
 .card {
-  @apply bg-white rounded-xl shadow-sm border border-line p-6 transition-all;
+  @apply bg-white rounded-xl shadow-sm border border-line p-3 md:p-6 transition-all;
 }
 
 .btn-primary {
@@ -61,7 +61,7 @@
 
 /* Layout Utilities */
 .chips-row {
-  @apply flex gap-3 overflow-x-auto pb-2 -mx-4 px-4;
+  @apply flex gap-1 md:gap-3 overflow-x-auto -mx-4 px-4;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

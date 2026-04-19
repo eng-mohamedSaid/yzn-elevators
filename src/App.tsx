@@ -22,7 +22,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="offers" element={<Offers />} />
-            <Route path="maintenance" element={<Maintenance />} />
+            {/* <Route path="maintenance" element={<Maintenance />} /> */}
             {/* <Route path="sites" element={<Sites />} />
             <Route path="sites/:id" element={<SiteDetails />} />
             <Route path="workers" element={<Workers />} />
