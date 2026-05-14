@@ -48,15 +48,19 @@ export interface MaintenanceContract {
   id: string;
   maintenanceNumber: string;
   customerName: string;
+  nationalId: string;
   phone: string;
   address: string;
+  locationUrl: string;
   date: string;
   elevatorType: string;
   elevatorCount: number;
-  visitFrequency: 'monthly' | 'quarterly' | 'semi-annually' | 'annually';
-  contractDuration: string;
+  floors: number;
+  maintenanceStartDate: string;
+  contractDuration: string;   // human label e.g. "سنة"
+  endDate: string;            // auto-calculated on save
+  price: number;
   notes: string;
-  total: number;
   createdAt: string;
 }
 

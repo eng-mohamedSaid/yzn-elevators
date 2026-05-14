@@ -41,9 +41,10 @@ export const OfferDetailView: React.FC<OfferDetailViewProps> = ({
           <input
             className="w-full bg-white border border-accent/30 rounded-lg p-2 text-sm outline-none"
             value={formData.locationUrl ?? ''}
+            placeholder="رابط Google Maps..."
             onChange={e => set({ locationUrl: e.target.value })}
           />
-        ) : (
+        ) : offer.locationUrl ? (
           <a
             href={offer.locationUrl}
             target="_blank"
@@ -52,6 +53,10 @@ export const OfferDetailView: React.FC<OfferDetailViewProps> = ({
           >
             <MapPin size={14} /> فتح الخريطة
           </a>
+        ) : (
+          <span className="flex items-center gap-2 bg-gray-50 text-secondary p-2 rounded-lg text-sm font-medium border border-line">
+            لا يوجد
+          </span>
         )}
       </div>
 
