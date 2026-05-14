@@ -8,7 +8,7 @@ export interface Offer {
   address: string;
   locationUrl: string;
   date: string;
-  customerType: 'client' | 'company';
+  customerType: 'عميل' | 'شركة';
   elevatorType: string;
   elevatorCount: number;
   stops: number;
