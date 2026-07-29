@@ -45,22 +45,22 @@ export const Maintenance: React.FC = () => {
   // ── Load ────────────────────────────────────────────────────────────────────
   useEffect(() => { loadContracts(); }, []);
 
-  const loadContracts = () => {
-    const data = dataService.getAll<MaintenanceContract>('maintenance');
+  const loadContracts = async () => {
+    const data = await dataService.getAll<MaintenanceContract>('maintenance');
     setContracts(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
   // ── Search ──────────────────────────────────────────────────────────────────
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (!query) { loadContracts(); return; }
-    setContracts(dataService.search<MaintenanceContract>('maintenance', query, [searchType]));
+    setContracts(await dataService.search<MaintenanceContract>('maintenance', query, [searchType]));
   };
 
   // ── CRUD ────────────────────────────────────────────────────────────────────
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const count = dataService.getAll<MaintenanceContract>('maintenance').length + 1;
+    const count = (await dataService.getAll<MaintenanceContract>('maintenance')).length + 1;
     const maintenanceNumber = `MNT-${String(count).padStart(4, '0')}`;
 
     // Ensure endDate is calculated before saving
@@ -69,30 +69,30 @@ export const Maintenance: React.FC = () => {
       formData.contractDuration ?? ''
     );
 
-    dataService.create<MaintenanceContract>('maintenance', {
+    await dataService.create<MaintenanceContract>('maintenance', {
       ...formData as MaintenanceContract,
       maintenanceNumber,
       endDate,
       createdAt: new Date().toISOString(),
     });
-    loadContracts();
+    await loadContracts();
     setIsAddOpen(false);
     setFormData(createDefaultContract());
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedContract) return;
-    dataService.update<MaintenanceContract>('maintenance', selectedContract.id, formData);
-    loadContracts();
+    await dataService.update<MaintenanceContract>('maintenance', selectedContract.id, formData);
+    await loadContracts();
     setIsEditMode(false);
-    const updated = dataService.getById<MaintenanceContract>('maintenance', selectedContract.id);
+    const updated = await dataService.getById<MaintenanceContract>('maintenance', selectedContract.id);
     if (updated) setSelectedContract(updated);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedContract) return;
-    dataService.delete('maintenance', selectedContract.id);
-    loadContracts();
+    await dataService.delete('maintenance', selectedContract.id);
+    await loadContracts();
     setIsConfirmDelete(false);
     setIsDetailOpen(false);
     setSelectedContract(null);

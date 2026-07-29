@@ -64,6 +64,12 @@ export interface MaintenanceContract {
   createdAt: string;
 }
 
+/** The 4 installation stages a site can be in. */
+export type SiteStage = 'برج' | 'باب وعمود' | 'ماكينة وكابينة' | 'كهرباء';
+
+/** Per-day money adjustment on a schedule / attendance row. */
+export type AdjustType = 'إضافي' | 'خصم' | 'لا يوجد';
+
 export interface Site {
   id: string;
   siteNumber: string;
@@ -72,12 +78,16 @@ export interface Site {
   mapUrl: string;
   startDate: string;
   endDate: string;
-  totalDays: number;
-  price: number;
-  stagePrice: number;
-  stagesCount: number;
-  stopPrice: number;
-  customerType: 'client' | 'company';
+  totalDays: number;      // auto = differenceInDays(end, start)
+  price: number;          // السعر الكلي — جنيه
+  elevatorCount: number;  // عدد المصاعد
+  elevatorType: string;   // نوع المصاعد — free text typed by the manager
+  stopPrice: number;      // سعر الوقفة
+  stopsCount: number;     // عدد الوقفات
+  stagePrice: number;     // سعر المرحلة
+  stagesCount: number;    // عدد المراحل
+  customerType: 'شركة' | 'عميل';
+  currentStage: SiteStage;
   createdAt: string;
 }
 
@@ -86,20 +96,38 @@ export interface SiteSchedule {
   siteId: string;
   day: string;
   date: string;
+  stageType: SiteStage | '';   // نوع المرحلة لليوم
   tech1Id: string;
   tech2Id: string;
   worker1Id: string;
   worker2Id: string;
-  notes: string;
+  accomplished: string;        // ما تم إنجازه
+  notes1: string;              // الملاحظات — 3 أعمدة
+  notes2: string;
+  notes3: string;
+  notes?: string;              // legacy single-notes field (pre-migration records)
+  adjustType: AdjustType;      // إضافي | خصم | لا يوجد
+  bonusValue: number;
+  bonusReason: string;
+  deductionValue: number;
+  deductionReason: string;
 }
+
+/** The 4 worker roles (نوع الموظف). */
+export type WorkerRole = 'مهندس' | 'فني' | 'مساعد' | 'مساعد أول';
+
+/** Salary basis (نوع الراتب). */
+export type SalaryType = 'يومية' | 'راتب شهري';
 
 export interface Worker {
   id: string;
   name: string;
+  role: WorkerRole;
+  salaryType: SalaryType;
+  baseSalary: number;      // قيمة الراتب — جنيه
   joinDate: string;
-  baseSalary: number;
   notes: string;
-  role: 'tech' | 'worker';
+  createdAt: string;
 }
 
 export interface AttendanceRecord {
@@ -108,9 +136,12 @@ export interface AttendanceRecord {
   day: string;
   date: string;
   status: 'present' | 'absent';
-  location: string;
-  bonus: number;
-  deduction: number;
+  location: string;            // مكان العمل — من المواقع/العروض
+  adjustType: AdjustType;      // إضافي | خصم | لا يوجد
+  bonusValue: number;
+  bonusReason: string;
+  deductionValue: number;
+  deductionReason: string;
 }
 
 export interface User {

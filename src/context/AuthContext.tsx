@@ -10,6 +10,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Single-manager login. The password is stored as a SHA-256 hash rather than
+// plaintext. NOTE: any client-side check is ultimately bypassable — this keeps
+// the password out of the source, it is not a substitute for real auth.
+// To change the password: run in a terminal —
+//   node -e "console.log(require('crypto').createHash('sha256').update('NEW_PASSWORD').digest('hex'))"
+// and paste the result below.
+const ADMIN_EMAIL = 'admin@alyazen.com';
+const ADMIN_PASSWORD_SHA256 = '0c62fa356a8b4f0fc5f14d2268f405437b35a572cd6ffdaa3c971fe3dd56c240';
+
+const sha256Hex = async (text: string): Promise<string> => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,9 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Check for admin credentials (hardcoded for v1 as per PRD)
-    if (email === 'admin@alyazen.com' && password === 'admin123') {
-      const adminUser: User = { email, role: 'admin' };
+    const passwordHash = await sha256Hex(password);
+    if (email.trim().toLowerCase() === ADMIN_EMAIL && passwordHash === ADMIN_PASSWORD_SHA256) {
+      const adminUser: User = { email: ADMIN_EMAIL, role: 'admin' };
       setUser(adminUser);
       localStorage.setItem('alyazen_auth', JSON.stringify(adminUser));
       return true;

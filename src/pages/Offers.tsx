@@ -45,42 +45,42 @@ export const Offers: React.FC = () => {
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => { loadOffers(); }, []);
 
-  const loadOffers = () => {
-    const data = dataService.getAll<Offer>('offers');
+  const loadOffers = async () => {
+    const data = await dataService.getAll<Offer>('offers');
     setOffers(data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
   // ── Search ─────────────────────────────────────────────────────────────────
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (!query) { loadOffers(); return; }
-    setOffers(dataService.search<Offer>('offers', query, [searchType]));
+    setOffers(await dataService.search<Offer>('offers', query, [searchType]));
   };
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const count       = dataService.getAll<Offer>('offers').length + 1;
+    const count       = (await dataService.getAll<Offer>('offers')).length + 1;
     const offerNumber = `OFF-${String(count).padStart(4, '0')}`;
-    dataService.create<Offer>('offers', { ...formData as Offer, offerNumber, createdAt: new Date().toISOString() });
-    loadOffers();
+    await dataService.create<Offer>('offers', { ...formData as Offer, offerNumber, createdAt: new Date().toISOString() });
+    await loadOffers();
     setIsAddOpen(false);
     setFormData(createDefaultOffer());
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedOffer) return;
-    dataService.update<Offer>('offers', selectedOffer.id, formData);
-    loadOffers();
+    await dataService.update<Offer>('offers', selectedOffer.id, formData);
+    await loadOffers();
     setIsEditMode(false);
-    const updated = dataService.getById<Offer>('offers', selectedOffer.id);
+    const updated = await dataService.getById<Offer>('offers', selectedOffer.id);
     if (updated) setSelectedOffer(updated);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedOffer) return;
-    dataService.delete('offers', selectedOffer.id);
-    loadOffers();
+    await dataService.delete('offers', selectedOffer.id);
+    await loadOffers();
     setIsConfirmDelete(false);
     setIsDetailOpen(false);
     setSelectedOffer(null);

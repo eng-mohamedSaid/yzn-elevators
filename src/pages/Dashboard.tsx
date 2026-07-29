@@ -11,16 +11,28 @@ export const Dashboard: React.FC = () => {
     sites: 0,
     workers: 0
   });
-  
+  const [recentOffers, setRecentOffers] = useState<any[]>([]);
+  const [recentSites, setRecentSites]   = useState<any[]>([]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
-    setStats({
-      offers: dataService.getAll('offers').length,
-      maintenance: dataService.getAll('maintenance').length,
-      sites: dataService.getAll('sites').length,
-      workers: dataService.getAll('workers').length
-    });
+    (async () => {
+      const [offers, maintenance, sites, workers] = await Promise.all([
+        dataService.getAll<any>('offers'),
+        dataService.getAll<any>('maintenance'),
+        dataService.getAll<any>('sites'),
+        dataService.getAll<any>('workers'),
+      ]);
+      setStats({
+        offers: offers.length,
+        maintenance: maintenance.length,
+        sites: sites.length,
+        workers: workers.length,
+      });
+      setRecentOffers(offers.slice(-5).reverse());
+      setRecentSites(sites.slice(-5).reverse());
+    })();
   }, []);
 
   const cards = [
@@ -57,7 +69,7 @@ export const Dashboard: React.FC = () => {
                 <button onClick={() => navigate('/offers')} className="text-xs font-bold text-accent py-1 px-3 border border-accent/20 rounded-md hover:bg-accent/5">عرض الكل</button>
             </div>
             <div className="divide-y divide-line">
-                {dataService.getAll<any>('offers').slice(-5).reverse().map(offer => (
+                {recentOffers.map(offer => (
                     <div key={offer.id} className="flex justify-between items-center p-6 hover:bg-bg transition-all cursor-pointer">
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
@@ -75,13 +87,13 @@ export const Dashboard: React.FC = () => {
                 <button onClick={() => navigate('/sites')} className="text-xs font-bold text-accent py-1 px-3 border border-accent/20 rounded-md hover:bg-accent/5">عرض الكل</button>
             </div>
             <div className="divide-y divide-line">
-                 {dataService.getAll<any>('sites').slice(-5).reverse().map(site => (
+                 {recentSites.map(site => (
                     <div key={site.id} className="flex justify-between items-center p-6 hover:bg-bg transition-all">
                         <div className="flex flex-col gap-1">
                             <span className="font-bold text-sm">{site.siteName}</span>
                             <span className="text-[11px] text-secondary font-medium">{site.startDate} ~ {site.endDate}</span>
                         </div>
-                        <span className="text-primary font-bold text-sm">{(site.price || 0).toLocaleString()} ر.س</span>
+                        <span className="text-primary font-bold text-sm">{(site.price || 0).toLocaleString()} جنيه</span>
                     </div>
                 ))}
             </div>

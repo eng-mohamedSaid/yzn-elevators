@@ -72,7 +72,7 @@ export const Login: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full bg-bg border border-line text-primary rounded-lg py-3 pr-4 pl-12 focus:border-accent outline-none transition-all text-sm"
-                placeholder="admin@alyazen.com"
+                placeholder="email@gmail.com"
                 dir="ltr"
               />
             </div>

@@ -11,9 +11,10 @@ const seedData = () => {
   
   if (!localStorage.getItem('alyazen_workers')) {
       const workers = [
-          { id: crypto.randomUUID(), name: 'خالد محمد', joinDate: '2023-01-10', baseSalary: 5000, role: 'tech', notes: 'خبير صيانة' },
-          { id: crypto.randomUUID(), name: 'أحمد علي', joinDate: '2023-05-15', baseSalary: 3500, role: 'worker', notes: '' },
-          { id: crypto.randomUUID(), name: 'سعيد حسن', joinDate: '2024-02-01', baseSalary: 5500, role: 'tech', notes: 'تخصص كبائن' }
+          { id: crypto.randomUUID(), name: 'خالد محمد', role: 'مهندس',    salaryType: 'راتب شهري', baseSalary: 5000, joinDate: '2023-01-10', notes: 'خبير صيانة', createdAt: '2023-01-10T00:00:00.000Z' },
+          { id: crypto.randomUUID(), name: 'أحمد علي',  role: 'مساعد',    salaryType: 'يومية',     baseSalary: 250,  joinDate: '2023-05-15', notes: '',            createdAt: '2023-05-15T00:00:00.000Z' },
+          { id: crypto.randomUUID(), name: 'سعيد حسن',  role: 'فني',      salaryType: 'راتب شهري', baseSalary: 5500, joinDate: '2024-02-01', notes: 'تخصص كبائن', createdAt: '2024-02-01T00:00:00.000Z' },
+          { id: crypto.randomUUID(), name: 'محمود سيد', role: 'مساعد أول', salaryType: 'يومية',     baseSalary: 350,  joinDate: '2024-06-01', notes: '',            createdAt: '2024-06-01T00:00:00.000Z' }
       ];
       localStorage.setItem('alyazen_workers', JSON.stringify(workers));
   }
