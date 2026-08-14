@@ -1,5 +1,6 @@
 import { ModuleType } from '../types';
 import { supabase } from './supabaseClient';
+import { toDataError } from './errors';
 
 const STORAGE_PREFIX = 'alyazen_';
 
@@ -17,20 +18,25 @@ const localWrite = <T>(module: ModuleType, rows: T[]): void => {
 const table = (module: ModuleType): any => supabase!.from(module);
 
 /**
- * Async CRUD layer. When Supabase is configured it is the source of truth and
- * every successful read is mirrored into localStorage as an offline cache.
- * When Supabase is absent or a call errors, we transparently fall back to the
- * localStorage cache so the app keeps working.
+ * Async CRUD layer.
+ *
+ * When Supabase is configured it is the sole source of truth: every successful
+ * read is mirrored into localStorage, and every *failure* is surfaced as a
+ * `DataError` carrying an Arabic message for the UI. Failures are deliberately
+ * NOT swallowed into the cache — a write that silently landed in localStorage
+ * only would look saved to the user while the server never received it.
+ *
+ * When Supabase is absent (no env vars yet), localStorage is the store and the
+ * app keeps working exactly as before.
  */
 export const dataService = {
   getAll: async <T>(module: ModuleType): Promise<T[]> => {
     if (supabase) {
       const { data, error } = await table(module).select('*');
-      if (!error && data) {
-        localWrite(module, data);
-        return data as T[];
-      }
-      if (error) console.warn(`[dataService] getAll(${module}) → falling back to cache:`, error.message);
+      if (error) throw toDataError(module, 'read', error);
+      const rows = (data ?? []) as T[];
+      localWrite(module, rows);
+      return rows;
     }
     return localAll<T>(module);
   },
@@ -44,11 +50,10 @@ export const dataService = {
     const newItem = { ...data, id: data.id ?? crypto.randomUUID() } as T;
     if (supabase) {
       const { data: inserted, error } = await table(module).insert(newItem).select().single();
-      if (!error && inserted) {
-        localWrite(module, [...localAll<T>(module).filter(i => i.id !== newItem.id), inserted as T]);
-        return inserted as T;
-      }
-      if (error) console.warn(`[dataService] create(${module}) → cache-only:`, error.message);
+      if (error) throw toDataError(module, 'create', error);
+      const row = inserted as T;
+      localWrite(module, [...localAll<T>(module).filter(i => i.id !== row.id), row]);
+      return row;
     }
     localWrite(module, [...localAll<T>(module), newItem]);
     return newItem;
@@ -57,11 +62,10 @@ export const dataService = {
   update: async <T extends { id: string }>(module: ModuleType, id: string, patch: Partial<T>): Promise<T | undefined> => {
     if (supabase) {
       const { data: updated, error } = await table(module).update(patch).eq('id', id).select().single();
-      if (!error && updated) {
-        localWrite(module, localAll<T>(module).map(i => (i.id === id ? (updated as T) : i)));
-        return updated as T;
-      }
-      if (error) console.warn(`[dataService] update(${module}) → cache-only:`, error.message);
+      if (error) throw toDataError(module, 'update', error);
+      const row = updated as T;
+      localWrite(module, localAll<T>(module).map(i => (i.id === id ? row : i)));
+      return row;
     }
     const all = localAll<T>(module);
     const idx = all.findIndex(i => i.id === id);
@@ -74,7 +78,7 @@ export const dataService = {
   delete: async (module: ModuleType, id: string): Promise<void> => {
     if (supabase) {
       const { error } = await table(module).delete().eq('id', id);
-      if (error) console.warn(`[dataService] delete(${module}) → cache-only:`, error.message);
+      if (error) throw toDataError(module, 'delete', error);
     }
     localWrite(module, localAll<{ id: string }>(module).filter(i => i.id !== id));
   },
@@ -86,7 +90,7 @@ export const dataService = {
   bulkUpsert: async <T extends { id: string }>(module: ModuleType, rows: T[]): Promise<void> => {
     if (supabase && rows.length) {
       const { error } = await table(module).upsert(rows);
-      if (error) console.warn(`[dataService] bulkUpsert(${module}) → cache-only:`, error.message);
+      if (error) throw toDataError(module, 'save', error);
     }
     const map = new Map(localAll<T>(module).map(r => [r.id, r]));
     rows.forEach(r => map.set(r.id, r));

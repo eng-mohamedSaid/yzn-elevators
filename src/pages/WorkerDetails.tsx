@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, Users, Calendar, Printer, Save, Edit3, Briefcase } from 'lucide-react';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 import { dataService } from '../services/dataService';
+import { DataError } from '../services/errors';
 import { Worker, AttendanceRecord } from '../types';
 import { DetailField } from '../components/DetailField';
 import { WORKER_ROLES, SALARY_TYPES, ADJUST_TYPES, getWorkLocations } from '../components/workers/workerConstants';
 import { printWorkerReport, SalaryReportTotals } from '../services/reportPrint';
+
+import { LoadingState }   from '../components/ui/LoadingState';
+import { ErrorState }     from '../components/ui/ErrorState';
+import { InlineAlert }    from '../components/ui/InlineAlert';
+import { LoadingButton }  from '../components/ui/LoadingButton';
+import { useAsyncData }   from '../hooks/useAsyncData';
+import { useAsyncAction } from '../hooks/useAsyncAction';
+import { nextFrame } from '../lib/nextFrame';
 
 // ── Normalize a (possibly legacy) attendance row to the full shape ────────────
 const normalizeRow = (
@@ -43,58 +52,66 @@ export const WorkerDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [worker, setWorker]         = useState<Worker | null>(null);
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData]     = useState<Partial<Worker>>({});
-
   const [dateRange, setDateRange] = useState({
     from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     to:   format(endOfMonth(new Date()),   'yyyy-MM-dd'),
   });
 
-  const [locationOptions, setLocationOptions] = useState<string[]>([]);
+  // ── Load the worker, their attendance for the range, and the location list ──
+  const { data, isLoading, isFetching, error, reload } = useAsyncData(async () => {
+    if (!id) throw new DataError('لم يتم تحديد الموظف المطلوب.');
+    const [workerData, savedAttendance, locations] = await Promise.all([
+      dataService.getById<Worker>('workers', id),
+      dataService.getAll<AttendanceRecord>('attendance'),
+      getWorkLocations(),
+    ]);
+    if (!workerData) throw new DataError('هذا الموظف غير موجود أو تم حذفه. عد لقائمة الموظفين واختر موظفاً آخر.');
 
-  useEffect(() => { getWorkLocations().then(setLocationOptions); }, []);
-
-  const loadAttendance = useCallback(async (workerId: string) => {
-    const saved = (await dataService.getAll<AttendanceRecord>('attendance')).filter(a =>
-      a.workerId === workerId && a.date >= dateRange.from && a.date <= dateRange.to
+    const saved = savedAttendance.filter(a =>
+      a.workerId === workerData.id && a.date >= dateRange.from && a.date <= dateRange.to
     );
     const days = eachDayOfInterval({ start: parseISO(dateRange.from), end: parseISO(dateRange.to) });
-    setAttendance(days.map(d => {
-      const dateStr = format(d, 'yyyy-MM-dd');
+    const rows = days.map(d => {
+      const dateStr  = format(d, 'yyyy-MM-dd');
       const existing = saved.find(a => a.date === dateStr);
-      return normalizeRow(existing ?? {}, workerId, format(d, 'EEEE', { locale: ar }), dateStr);
-    }));
-  }, [dateRange]);
+      return normalizeRow(existing ?? {}, workerData.id, format(d, 'EEEE', { locale: ar }), dateStr);
+    });
+
+    return { worker: workerData, attendance: rows, locationOptions: locations };
+  }, [id, dateRange.from, dateRange.to]);
+
+  // ── Editable copies of the loaded data ──────────────────────────────────────
+  const [worker, setWorker]         = useState<Worker | null>(null);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData]     = useState<Partial<Worker>>({});
+  const [attendanceSaved, setAttendanceSaved] = useState(false);
+  const [workerSaved, setWorkerSaved]         = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-    (async () => {
-      const workerData = await dataService.getById<Worker>('workers', id);
-      if (workerData) {
-        setWorker(workerData);
-        setFormData(workerData);
-        await loadAttendance(workerData.id);
-      }
-    })();
-  }, [id, loadAttendance]);
+    if (!data) return;
+    setWorker(data.worker);
+    setFormData(data.worker);
+    setAttendance(data.attendance);
+  }, [data]);
 
   const updateRow = (idx: number, patch: Partial<AttendanceRecord>) =>
     setAttendance(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
-  const handleSaveAttendance = async () => {
+  const saveAttendance = useAsyncAction(async () => {
     await dataService.bulkUpsert<AttendanceRecord>('attendance', attendance);
-    alert('تم حفظ سجل الحضور بنجاح');
-  };
+    setAttendanceSaved(true);
+    setTimeout(() => setAttendanceSaved(false), 4000);
+  });
 
-  const handleUpdateWorker = async () => {
+  const saveWorker = useAsyncAction(async () => {
     if (!worker) return;
     await dataService.update<Worker>('workers', worker.id, formData);
     setWorker({ ...worker, ...formData } as Worker);
     setIsEditMode(false);
-  };
+    setWorkerSaved(true);
+    setTimeout(() => setWorkerSaved(false), 4000);
+  });
 
   // ── Totals (salary-type aware) ──────────────────────────────────────────────
   const totals: SalaryReportTotals = useMemo(() => {
@@ -113,21 +130,43 @@ export const WorkerDetails: React.FC = () => {
     return { presentDays, absentDays, totalBonus, totalDeduction, baseComponent, netSalary, locations };
   }, [attendance, worker]);
 
-  const handlePrint = () => {
+  const print = useAsyncAction(async () => {
     if (!worker) return;
+    await nextFrame();
     printWorkerReport({ worker, rows: attendance, range: dateRange, totals });
-  };
+  });
 
-  if (!worker) return <div>جاري التحميل...</div>;
+  const backLink = (
+    <button onClick={() => navigate('/workers')} className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-all">
+      <ChevronRight size={20} />
+      الرجوع للموظفين
+    </button>
+  );
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {backLink}
+        <LoadingState hint="يتم الآن جلب بيانات الموظف وسجل الحضور" />
+      </div>
+    );
+  }
+
+  if (error || !worker) {
+    return (
+      <div className="space-y-6">
+        {backLink}
+        <ErrorState error={error} onRetry={reload} isRetrying={isFetching} title="تعذّر تحميل بيانات الموظف" />
+      </div>
+    );
+  }
+
+  const locationOptions = data?.locationOptions ?? [];
   const locationsForSelect = Array.from(new Set([...locationOptions, ...attendance.map(a => a.location).filter(Boolean)]));
 
   return (
     <div className="space-y-8 pb-32">
-      <button onClick={() => navigate('/workers')} className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-all">
-        <ChevronRight size={20} />
-        الرجوع للموظفين
-      </button>
+      {backLink}
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -141,14 +180,27 @@ export const WorkerDetails: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <button onClick={() => setIsEditMode(!isEditMode)} className="flex-1 sm:flex-none px-6 py-3 bg-white border border-line rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-bg transition-colors">
+          <button
+            onClick={() => { saveWorker.clearError(); setIsEditMode(!isEditMode); }}
+            disabled={saveWorker.isPending}
+            className="flex-1 sm:flex-none px-6 py-3 bg-white border border-line rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-bg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             <Edit3 size={18} /> {isEditMode ? 'إلغاء التعديل' : 'تعديل البيانات'}
           </button>
-          <button onClick={handlePrint} title="طباعة تقرير الراتب" className="bg-primary text-white p-3 rounded-xl shadow-sm border border-primary hover:opacity-90 transition-opacity">
+          <LoadingButton
+            onClick={() => print.run()}
+            isLoading={print.isPending}
+            loadingText=""
+            spinnerSize={20}
+            title="طباعة تقرير الراتب"
+            className="bg-primary text-white p-3 rounded-xl shadow-sm border border-primary hover:opacity-90 transition-opacity"
+          >
             <Printer size={20} />
-          </button>
+          </LoadingButton>
         </div>
       </div>
+
+      <InlineAlert error={print.error} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Personal data ─────────────────────────────────────────────── */}
@@ -163,8 +215,19 @@ export const WorkerDetails: React.FC = () => {
             <DetailField label="تاريخ الالتحاق" value={formData.joinDate ?? ''} isEdit={isEditMode} type="date" onChange={v => setFormData({ ...formData, joinDate: v })} />
             <DetailField label="ملاحظات" value={formData.notes ?? ''} isEdit={isEditMode} type="textarea" onChange={v => setFormData({ ...formData, notes: v })} />
           </div>
+
+          <InlineAlert error={saveWorker.error} onRetry={() => saveWorker.run()} isRetrying={saveWorker.isPending} />
+          {workerSaved && <InlineAlert variant="success" message="تم حفظ بيانات الموظف بنجاح." />}
+
           {isEditMode && (
-            <button onClick={handleUpdateWorker} className="w-full btn-primary py-3 rounded-xl shadow-sm">حفظ التعديلات</button>
+            <LoadingButton
+              onClick={() => saveWorker.run()}
+              isLoading={saveWorker.isPending}
+              loadingText="جاري الحفظ..."
+              className="w-full btn-primary py-3 rounded-xl shadow-sm"
+            >
+              حفظ التعديلات
+            </LoadingButton>
           )}
         </div>
 
@@ -181,6 +244,17 @@ export const WorkerDetails: React.FC = () => {
               <input type="date" value={dateRange.to} onChange={e => setDateRange({ ...dateRange, to: e.target.value })} className="text-xs font-bold outline-none bg-transparent" />
             </div>
           </div>
+
+          {/* Changing the date range refetches — say so instead of freezing. */}
+          {isFetching && (
+            <p className="text-xs font-bold text-secondary flex items-center gap-2">
+              <span className="inline-block w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              جاري تحميل سجل الحضور للفترة المحددة...
+            </p>
+          )}
+
+          <InlineAlert error={saveAttendance.error} onRetry={() => saveAttendance.run()} isRetrying={saveAttendance.isPending} />
+          {attendanceSaved && <InlineAlert variant="success" message="تم حفظ سجل الحضور بنجاح." />}
 
           <div className="overflow-x-auto bg-white rounded-xl border border-line shadow-sm">
             <table className="w-full text-right min-w-[820px] text-sm">
@@ -243,12 +317,23 @@ export const WorkerDetails: React.FC = () => {
           </div>
 
           <div className="flex justify-between items-center pt-2">
-            <button onClick={handlePrint} className="bg-white border border-line text-secondary font-bold px-5 py-3 rounded-xl flex items-center gap-2 hover:bg-bg transition-colors">
+            <LoadingButton
+              onClick={() => print.run()}
+              isLoading={print.isPending}
+              loadingText="جاري تجهيز التقرير..."
+              className="bg-white border border-line text-secondary font-bold px-5 py-3 rounded-xl flex items-center gap-2 hover:bg-bg transition-colors"
+            >
               <Printer size={18} /> طباعة تقرير الراتب (PDF)
-            </button>
-            <button onClick={handleSaveAttendance} className="btn-primary flex items-center gap-2 shadow-sm">
+            </LoadingButton>
+            <LoadingButton
+              onClick={() => saveAttendance.run()}
+              isLoading={saveAttendance.isPending}
+              loadingText="جاري الحفظ..."
+              spinnerSize={20}
+              className="btn-primary flex items-center gap-2 shadow-sm"
+            >
               <Save size={20} /> حفظ سجل الحضور
-            </button>
+            </LoadingButton>
           </div>
         </div>
       </div>

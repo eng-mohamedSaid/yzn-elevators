@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { MaintenanceContract } from '../../types';
 import { Modal } from '../Modal';
+import { LoadingButton } from '../ui/LoadingButton';
+import { InlineAlert } from '../ui/InlineAlert';
+import { AppError } from '../../services/errors';
 import { MaintenanceFormFields, MaintenanceFormErrors } from './MaintenanceFormFields';
 
 interface AddMaintenanceModalProps {
@@ -9,6 +12,10 @@ interface AddMaintenanceModalProps {
   formData: Partial<MaintenanceContract>;
   onChange: (patch: Partial<MaintenanceContract>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  /** True while the create request is in flight. */
+  isSubmitting?: boolean;
+  /** Failure returned by the create request, shown above the buttons. */
+  submitError?: AppError | null;
 }
 
 const validate = (data: Partial<MaintenanceContract>): MaintenanceFormErrors => {
@@ -26,7 +33,7 @@ const validate = (data: Partial<MaintenanceContract>): MaintenanceFormErrors => 
 const hasErrors = (e: MaintenanceFormErrors) => Object.keys(e).length > 0;
 
 export const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
-  isOpen, onClose, formData, onChange, onSubmit,
+  isOpen, onClose, formData, onChange, onSubmit, isSubmitting = false, submitError = null,
 }) => {
   const [errors, setErrors] = useState<MaintenanceFormErrors>({});
 
@@ -49,7 +56,7 @@ export const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="إضافة عقد صيانة جديد" size="full">
+    <Modal isOpen={isOpen} onClose={onClose} title="إضافة عقد صيانة جديد" size="full" isBusy={isSubmitting}>
       <form onSubmit={handleSubmit} className="space-y-1" noValidate>
         {hasErrors(errors) && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2 text-red-600 text-sm font-bold">
@@ -58,9 +65,25 @@ export const AddMaintenanceModal: React.FC<AddMaintenanceModalProps> = ({
           </div>
         )}
         <MaintenanceFormFields data={formData} onChange={handleChange} errors={errors} />
+        <InlineAlert error={submitError} className="mt-4" />
+
         <div className="flex gap-3 pt-4">
-          <button type="submit"  className="flex-1 btn-primary py-4 rounded-xl shadow-sm">حفظ العقد</button>
-          <button type="button" onClick={onClose} className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl">إلغاء</button>
+          <LoadingButton
+            type="submit"
+            isLoading={isSubmitting}
+            loadingText="جاري الحفظ..."
+            className="flex-1 btn-primary py-4 rounded-xl shadow-sm"
+          >
+            حفظ العقد
+          </LoadingButton>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            إلغاء
+          </button>
         </div>
       </form>
     </Modal>

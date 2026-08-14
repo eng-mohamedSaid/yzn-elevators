@@ -9,16 +9,24 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: 'md' | 'lg' | 'full';
+  /**
+   * While an action inside the dialog is running, block dismissal (backdrop
+   * click and the X button) so the request can't be orphaned mid-flight.
+   */
+  isBusy?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
   footer,
-  size = 'md'
+  size = 'md',
+  isBusy = false
 }) => {
+  const requestClose = () => { if (!isBusy) onClose(); };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -27,8 +35,8 @@ export const Modal: React.FC<ModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-secondary/80 backdrop-blur-sm z-[100]"
+            onClick={requestClose}
+            className="fixed inset-0 bg-secondary/80 backdrop-blur-sm z-[100] w-full h-full"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -41,9 +49,10 @@ export const Modal: React.FC<ModalProps> = ({
           >
             <div className="px-6 py-5 border-b border-line flex justify-between items-center bg-white sticky top-0 z-10">
               <h3 className="text-xl font-bold tracking-tight text-primary">{title}</h3>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-bg rounded-full transition-all text-secondary hover:text-primary"
+              <button
+                onClick={requestClose}
+                disabled={isBusy}
+                className="p-2 hover:bg-bg rounded-full transition-all text-secondary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <X size={22} />
               </button>

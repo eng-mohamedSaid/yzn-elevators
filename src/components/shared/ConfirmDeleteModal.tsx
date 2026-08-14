@@ -1,6 +1,9 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { Modal } from '../Modal';
+import { LoadingButton } from '../ui/LoadingButton';
+import { InlineAlert } from '../ui/InlineAlert';
+import { AppError } from '../../services/errors';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
@@ -8,6 +11,10 @@ interface ConfirmDeleteModalProps {
   onConfirm: () => void;
   /** Optional entity label shown in the message, e.g. "العرض" or "العقد" */
   entityLabel?: string;
+  /** True while the delete request is in flight. */
+  isDeleting?: boolean;
+  /** Failure returned by the delete request. */
+  deleteError?: AppError | null;
 }
 
 /**
@@ -15,9 +22,9 @@ interface ConfirmDeleteModalProps {
  * Reusable across Offers, Maintenance, Sites, Workers, etc.
  */
 export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
-  isOpen, onClose, onConfirm, entityLabel = 'هذا السجل',
+  isOpen, onClose, onConfirm, entityLabel = 'هذا السجل', isDeleting = false, deleteError = null,
 }) => (
-  <Modal isOpen={isOpen} onClose={onClose} title="تأكيد الحذف">
+  <Modal isOpen={isOpen} onClose={onClose} title="تأكيد الحذف" isBusy={isDeleting}>
     <div className="text-center space-y-4 py-2">
       <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
         <Trash2 size={32} />
@@ -26,9 +33,25 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         هل أنت متأكد من حذف {entityLabel} نهائياً؟<br />
         <span className="text-red-500">لا يمكن استعادة البيانات المحذوفة.</span>
       </p>
+
+      <InlineAlert error={deleteError} className="text-right" />
+
       <div className="flex gap-3">
-        <button onClick={onConfirm} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors">نعم، حذف نهائياً</button>
-        <button onClick={onClose}   className="flex-1 bg-bg border border-line py-3 rounded-xl font-bold text-secondary">إلغاء</button>
+        <LoadingButton
+          onClick={onConfirm}
+          isLoading={isDeleting}
+          loadingText="جاري الحذف..."
+          className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition-colors"
+        >
+          نعم، حذف نهائياً
+        </LoadingButton>
+        <button
+          onClick={onClose}
+          disabled={isDeleting}
+          className="flex-1 bg-bg border border-line py-3 rounded-xl font-bold text-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          إلغاء
+        </button>
       </div>
     </div>
   </Modal>

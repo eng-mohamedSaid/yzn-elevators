@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Offer } from '../../types';
 import { Modal } from '../Modal';
 import { OfferFormFields, OfferFormErrors } from './OfferFormFields';
+import { LoadingButton } from '../ui/LoadingButton';
+import { InlineAlert } from '../ui/InlineAlert';
+import { AppError } from '../../services/errors';
 
 interface AddOfferModalProps {
   isOpen: boolean;
@@ -9,6 +12,10 @@ interface AddOfferModalProps {
   formData: Partial<Offer>;
   onChange: (patch: Partial<Offer>) => void;
   onSubmit: (e: React.FormEvent) => void;
+  /** True while the create request is in flight. */
+  isSubmitting?: boolean;
+  /** Failure returned by the create request, shown above the buttons. */
+  submitError?: AppError | null;
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -46,7 +53,7 @@ const hasErrors = (errs: OfferFormErrors) => Object.keys(errs).length > 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const AddOfferModal: React.FC<AddOfferModalProps> = ({
-  isOpen, onClose, formData, onChange, onSubmit,
+  isOpen, onClose, formData, onChange, onSubmit, isSubmitting = false, submitError = null,
 }) => {
   const [errors, setErrors] = useState<OfferFormErrors>({});
 
@@ -77,7 +84,7 @@ export const AddOfferModal: React.FC<AddOfferModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="إضافة عرض سعر جديد" size="full">
+    <Modal isOpen={isOpen} onClose={onClose} title="إضافة عرض سعر جديد" size="full" isBusy={isSubmitting}>
       <form onSubmit={handleSubmit} className="space-y-1" noValidate>
 
         {/* Global validation banner */}
@@ -90,9 +97,25 @@ export const AddOfferModal: React.FC<AddOfferModalProps> = ({
 
         <OfferFormFields data={formData} onChange={handleChange} errors={errors} />
 
+        <InlineAlert error={submitError} className="mt-4" />
+
         <div className="flex gap-3 pt-4">
-          <button type="submit"  className="flex-1 btn-primary py-4 rounded-xl shadow-sm">إضافة العرض</button>
-          <button type="button" onClick={onClose} className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl">إلغاء</button>
+          <LoadingButton
+            type="submit"
+            isLoading={isSubmitting}
+            loadingText="جاري الحفظ..."
+            className="flex-1 btn-primary py-4 rounded-xl shadow-sm"
+          >
+            إضافة العرض
+          </LoadingButton>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            إلغاء
+          </button>
         </div>
       </form>
     </Modal>

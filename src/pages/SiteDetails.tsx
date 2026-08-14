@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, MapPin, Calendar, Save, Trash2, Edit3, Map } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 import { dataService } from '../services/dataService';
+import { DataError } from '../services/errors';
 import { Site, SiteSchedule, Worker } from '../types';
 import { DetailField } from '../components/DetailField';
 import {
@@ -15,6 +16,14 @@ import {
   WORKER_ROLES,
   calcTotalDays,
 } from '../components/sites/siteConstants';
+
+import { ConfirmDeleteModal } from '../components/shared/ConfirmDeleteModal';
+import { LoadingState }   from '../components/ui/LoadingState';
+import { ErrorState }     from '../components/ui/ErrorState';
+import { InlineAlert }    from '../components/ui/InlineAlert';
+import { LoadingButton }  from '../components/ui/LoadingButton';
+import { useAsyncData }   from '../hooks/useAsyncData';
+import { useAsyncAction } from '../hooks/useAsyncAction';
 
 // ── Normalize a (possibly legacy) schedule row to the full shape ──────────────
 const normalizeRow = (
@@ -43,56 +52,64 @@ const normalizeRow = (
   deductionReason: r.deductionReason ?? '',
 });
 
+/** Build the editable day-grid: saved rows if any, otherwise one row per day. */
+const buildSchedule = (siteData: Site, saved: SiteSchedule[]): SiteSchedule[] => {
+  const existing = saved.filter(s => s.siteId === siteData.id);
+
+  if (existing.length > 0) {
+    return existing
+      .map(r => normalizeRow(r, siteData.id, r.day, r.date))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  if (!siteData.startDate || !siteData.endDate) return [];
+  const days = eachDayOfInterval({ start: parseISO(siteData.startDate), end: parseISO(siteData.endDate) });
+  return days.map(d =>
+    normalizeRow({}, siteData.id, format(d, 'EEEE', { locale: ar }), format(d, 'yyyy-MM-dd'))
+  );
+};
+
 export const SiteDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [site, setSite]           = useState<Site | null>(null);
-  const [schedules, setSchedules] = useState<SiteSchedule[]>([]);
-  const [workers, setWorkers]     = useState<Worker[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [formData, setFormData]   = useState<Partial<Site>>({});
-
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      const siteData = await dataService.getById<Site>('sites', id);
-      if (siteData) {
-        setSite(siteData);
-        setFormData(siteData);
-        await loadSchedules(siteData);
-      }
-      setWorkers(await dataService.getAll<Worker>('workers'));
-    })();
+  // ── Load everything the page needs in one request set ───────────────────────
+  const { data, isLoading, isFetching, error, reload } = useAsyncData(async () => {
+    if (!id) throw new DataError('لم يتم تحديد الموقع المطلوب.');
+    const [siteData, workersData, savedSchedule] = await Promise.all([
+      dataService.getById<Site>('sites', id),
+      dataService.getAll<Worker>('workers'),
+      dataService.getAll<SiteSchedule>('schedule'),
+    ]);
+    if (!siteData) throw new DataError('هذا الموقع غير موجود أو تم حذفه. عد لقائمة المواقع واختر موقعاً آخر.');
+    return { site: siteData, workers: workersData, schedules: buildSchedule(siteData, savedSchedule) };
   }, [id]);
 
-  const loadSchedules = async (siteData: Site) => {
-    const existing = (await dataService.getAll<SiteSchedule>('schedule')).filter(s => s.siteId === siteData.id);
+  // ── Editable copies of the loaded data ──────────────────────────────────────
+  const [site, setSite]             = useState<Site | null>(null);
+  const [schedules, setSchedules]   = useState<SiteSchedule[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData]     = useState<Partial<Site>>({});
+  const [isConfirmDelete, setIsConfirmDelete] = useState(false);
+  const [scheduleSaved, setScheduleSaved]     = useState(false);
+  const [siteSaved, setSiteSaved]             = useState(false);
 
-    if (existing.length === 0) {
-      // Generate one empty row per day in the site's date range.
-      if (!siteData.startDate || !siteData.endDate) { setSchedules([]); return; }
-      const days = eachDayOfInterval({ start: parseISO(siteData.startDate), end: parseISO(siteData.endDate) });
-      setSchedules(days.map(d =>
-        normalizeRow({}, siteData.id, format(d, 'EEEE', { locale: ar }), format(d, 'yyyy-MM-dd'))
-      ));
-    } else {
-      setSchedules(
-        existing
-          .map(r => normalizeRow(r, siteData.id, r.day, r.date))
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      );
-    }
-  };
+  useEffect(() => {
+    if (!data) return;
+    setSite(data.site);
+    setFormData(data.site);
+    setSchedules(data.schedules);
+  }, [data]);
 
   /** Patch a single schedule row by index. */
   const updateRow = (idx: number, patch: Partial<SiteSchedule>) =>
     setSchedules(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
-  const handleSaveSchedule = async () => {
+  const saveSchedule = useAsyncAction(async () => {
     await dataService.bulkUpsert<SiteSchedule>('schedule', schedules);
-    alert('تم حفظ الجدول بنجاح');
-  };
+    setScheduleSaved(true);
+    setTimeout(() => setScheduleSaved(false), 4000);
+  });
 
   /** Patch the site form + auto-recalc totalDays when dates change. */
   const setField = (patch: Partial<Site>) => {
@@ -103,32 +120,53 @@ export const SiteDetails: React.FC = () => {
     setFormData(next);
   };
 
-  const handleUpdateSite = async () => {
+  const saveSite = useAsyncAction(async () => {
     if (!site) return;
     await dataService.update<Site>('sites', site.id, formData);
     setSite({ ...site, ...formData } as Site);
     setIsEditMode(false);
-  };
+    setSiteSaved(true);
+    setTimeout(() => setSiteSaved(false), 4000);
+  });
 
-  const handleDeleteSite = async () => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الموقع؟')) {
-      await dataService.delete('sites', id!);
-      navigate('/sites');
-    }
-  };
+  const removeSite = useAsyncAction(async () => {
+    await dataService.delete('sites', id!);
+    navigate('/sites');
+  });
 
-  if (!site) return <div>جاري التحميل...</div>;
+  const backLink = (
+    <button onClick={() => navigate('/sites')} className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-all">
+      <ChevronRight size={20} />
+      الرجوع للمواقع
+    </button>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {backLink}
+        <LoadingState hint="يتم الآن جلب بيانات الموقع وجدول العمل" />
+      </div>
+    );
+  }
+
+  if (error || !site) {
+    return (
+      <div className="space-y-6">
+        {backLink}
+        <ErrorState error={error} onRetry={reload} isRetrying={isFetching} title="تعذّر تحميل بيانات الموقع" />
+      </div>
+    );
+  }
 
   // Technician slots take مهندس/فني; worker slots take مساعد/مساعد أول.
-  const techs  = workers.filter(w => TECH_ROLES.includes(w.role));
-  const labors = workers.filter(w => WORKER_ROLES.includes(w.role));
+  const workers = data?.workers ?? [];
+  const techs   = workers.filter(w => TECH_ROLES.includes(w.role));
+  const labors  = workers.filter(w => WORKER_ROLES.includes(w.role));
 
   return (
     <div className="space-y-8 pb-32">
-      <button onClick={() => navigate('/sites')} className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-all">
-        <ChevronRight size={20} />
-        الرجوع للمواقع
-      </button>
+      {backLink}
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -142,10 +180,17 @@ export const SiteDetails: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <button onClick={() => setIsEditMode(!isEditMode)} className="flex-1 sm:flex-none px-6 py-3 bg-white border border-line rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-bg transition-colors">
+          <button
+            onClick={() => { saveSite.clearError(); setIsEditMode(!isEditMode); }}
+            disabled={saveSite.isPending}
+            className="flex-1 sm:flex-none px-6 py-3 bg-white border border-line rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-bg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
             <Edit3 size={18} /> {isEditMode ? 'إلغاء التعديل' : 'تعديل البيانات'}
           </button>
-          <button onClick={handleDeleteSite} className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition-colors">
+          <button
+            onClick={() => { removeSite.clearError(); setIsConfirmDelete(true); }}
+            className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
+          >
             <Trash2 size={20} />
           </button>
         </div>
@@ -180,9 +225,21 @@ export const SiteDetails: React.FC = () => {
             )}
           </div>
         </div>
-        {isEditMode && (
-          <button onClick={handleUpdateSite} className="mt-8 btn-primary px-8 py-3 rounded-xl shadow-sm">حفظ البيانات</button>
-        )}
+
+        <div className="mt-8 space-y-3">
+          <InlineAlert error={saveSite.error} onRetry={() => saveSite.run()} isRetrying={saveSite.isPending} />
+          {siteSaved && <InlineAlert variant="success" message="تم حفظ بيانات الموقع بنجاح." />}
+          {isEditMode && (
+            <LoadingButton
+              onClick={() => saveSite.run()}
+              isLoading={saveSite.isPending}
+              loadingText="جاري الحفظ..."
+              className="btn-primary px-8 py-3 rounded-xl shadow-sm"
+            >
+              حفظ البيانات
+            </LoadingButton>
+          )}
+        </div>
       </div>
 
       {/* ── Daily Work Log ────────────────────────────────────────────────── */}
@@ -192,10 +249,18 @@ export const SiteDetails: React.FC = () => {
             <Calendar className="text-accent" />
             جدول العمل اليومي
           </h2>
-          <button onClick={handleSaveSchedule} className="btn-primary px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2">
+          <LoadingButton
+            onClick={() => saveSchedule.run()}
+            isLoading={saveSchedule.isPending}
+            loadingText="جاري الحفظ..."
+            className="btn-primary px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2"
+          >
             <Save size={18} /> حفظ الجدول
-          </button>
+          </LoadingButton>
         </div>
+
+        <InlineAlert error={saveSchedule.error} onRetry={() => saveSchedule.run()} isRetrying={saveSchedule.isPending} />
+        {scheduleSaved && <InlineAlert variant="success" message="تم حفظ الجدول بنجاح." />}
 
         <div className="overflow-x-auto bg-white rounded-xl border border-line shadow-sm">
           <table className="w-full text-right min-w-[1400px] text-sm">
@@ -267,6 +332,15 @@ export const SiteDetails: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={isConfirmDelete}
+        onClose={() => setIsConfirmDelete(false)}
+        onConfirm={removeSite.run}
+        entityLabel="هذا الموقع"
+        isDeleting={removeSite.isPending}
+        deleteError={removeSite.error}
+      />
     </div>
   );
 };

@@ -1,58 +1,80 @@
-import React, { useEffect, useState } from 'react';
-import { FileText, Wrench, MapPin, Users, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
+import React from 'react';
+import { FileText, Wrench, MapPin, Users } from 'lucide-react';
 import { dataService } from '../services/dataService';
-import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-export const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState({
-    offers: 0,
-    maintenance: 0,
-    sites: 0,
-    workers: 0
-  });
-  const [recentOffers, setRecentOffers] = useState<any[]>([]);
-  const [recentSites, setRecentSites]   = useState<any[]>([]);
+import { LoadingState } from '../components/ui/LoadingState';
+import { ErrorState }   from '../components/ui/ErrorState';
+import { useAsyncData } from '../hooks/useAsyncData';
 
+interface DashboardData {
+  counts: { offers: number; maintenance: number; sites: number; workers: number };
+  recentOffers: any[];
+  recentSites: any[];
+}
+
+export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    (async () => {
-      const [offers, maintenance, sites, workers] = await Promise.all([
-        dataService.getAll<any>('offers'),
-        dataService.getAll<any>('maintenance'),
-        dataService.getAll<any>('sites'),
-        dataService.getAll<any>('workers'),
-      ]);
-      setStats({
+  const { data, isLoading, isFetching, error, reload } = useAsyncData<DashboardData>(async () => {
+    const [offers, maintenance, sites, workers] = await Promise.all([
+      dataService.getAll<any>('offers'),
+      dataService.getAll<any>('maintenance'),
+      dataService.getAll<any>('sites'),
+      dataService.getAll<any>('workers'),
+    ]);
+    return {
+      counts: {
         offers: offers.length,
         maintenance: maintenance.length,
         sites: sites.length,
         workers: workers.length,
-      });
-      setRecentOffers(offers.slice(-5).reverse());
-      setRecentSites(sites.slice(-5).reverse());
-    })();
+      },
+      recentOffers: offers.slice(-5).reverse(),
+      recentSites:  sites.slice(-5).reverse(),
+    };
   }, []);
 
+  const header = (
+    <div>
+      <h1 className="text-2xl font-bold mb-1">لوحة التحكم</h1>
+      <p className="text-muted text-sm">أهلاً بك في نظام اليزن للمصاعد. إليك ملخص العمل اليوم.</p>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <LoadingState hint="يتم الآن جلب ملخص البيانات" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="space-y-8">
+        {header}
+        <ErrorState error={error} onRetry={reload} isRetrying={isFetching} title="تعذّر تحميل لوحة التحكم" />
+      </div>
+    );
+  }
+
   const cards = [
-    { title: 'العروض', count: stats.offers, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', path: '/offers' },
-    { title: 'الصيانة', count: stats.maintenance, icon: Wrench, color: 'text-orange-600', bg: 'bg-orange-50', path: '/maintenance' },
-    { title: 'المواقع', count: stats.sites, icon: MapPin, color: 'text-green-600', bg: 'bg-green-50', path: '/sites' },
-    { title: 'الموظفين', count: stats.workers, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50', path: '/workers' }
+    { title: 'العروض',   count: data.counts.offers,      icon: FileText, color: 'text-blue-600',   bg: 'bg-blue-50',   path: '/offers' },
+    { title: 'الصيانة',  count: data.counts.maintenance, icon: Wrench,   color: 'text-orange-600', bg: 'bg-orange-50', path: '/maintenance' },
+    { title: 'المواقع',  count: data.counts.sites,       icon: MapPin,   color: 'text-green-600',  bg: 'bg-green-50',  path: '/sites' },
+    { title: 'الموظفين', count: data.counts.workers,     icon: Users,    color: 'text-purple-600', bg: 'bg-purple-50', path: '/workers' }
   ];
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-1">لوحة التحكم</h1>
-        <p className="text-muted text-sm">أهلاً بك في نظام اليزن للمصاعد. إليك ملخص العمل اليوم.</p>
-      </div>
+      {header}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
         {cards.map((card) => (
-          <div 
-            key={card.title} 
+          <div
+            key={card.title}
             onClick={() => navigate(card.path)}
             className="bg-white p-6 rounded-xl border border-line shadow-sm cursor-pointer hover:border-accent group transition-all"
           >
@@ -69,7 +91,9 @@ export const Dashboard: React.FC = () => {
                 <button onClick={() => navigate('/offers')} className="text-xs font-bold text-accent py-1 px-3 border border-accent/20 rounded-md hover:bg-accent/5">عرض الكل</button>
             </div>
             <div className="divide-y divide-line">
-                {recentOffers.map(offer => (
+                {data.recentOffers.length === 0 ? (
+                    <p className="p-6 text-sm text-secondary font-medium">لا توجد عروض بعد.</p>
+                ) : data.recentOffers.map(offer => (
                     <div key={offer.id} className="flex justify-between items-center p-6 hover:bg-bg transition-all cursor-pointer">
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
@@ -87,7 +111,9 @@ export const Dashboard: React.FC = () => {
                 <button onClick={() => navigate('/sites')} className="text-xs font-bold text-accent py-1 px-3 border border-accent/20 rounded-md hover:bg-accent/5">عرض الكل</button>
             </div>
             <div className="divide-y divide-line">
-                 {recentSites.map(site => (
+                 {data.recentSites.length === 0 ? (
+                    <p className="p-6 text-sm text-secondary font-medium">لا توجد مواقع بعد.</p>
+                 ) : data.recentSites.map(site => (
                     <div key={site.id} className="flex justify-between items-center p-6 hover:bg-bg transition-all">
                         <div className="flex flex-col gap-1">
                             <span className="font-bold text-sm">{site.siteName}</span>
