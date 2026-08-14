@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, MapPin, Calendar, Save, Trash2, Edit3, Map } from 'lucide-react';
+import { ChevronRight, MapPin, Calendar, Save, Trash2, Edit3, Map, Printer } from 'lucide-react';
 import { format, eachDayOfInterval, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -24,6 +24,8 @@ import { InlineAlert }    from '../components/ui/InlineAlert';
 import { LoadingButton }  from '../components/ui/LoadingButton';
 import { useAsyncData }   from '../hooks/useAsyncData';
 import { useAsyncAction } from '../hooks/useAsyncAction';
+import { printSiteReport } from '../services/reportPrint';
+import { nextFrame } from '../lib/nextFrame';
 
 // ── Normalize a (possibly legacy) schedule row to the full shape ──────────────
 const normalizeRow = (
@@ -134,6 +136,18 @@ export const SiteDetails: React.FC = () => {
     navigate('/sites');
   });
 
+  /** Full site file (data + every scheduled day) as a printable PDF. */
+  const print = useAsyncAction(async () => {
+    if (!site) return;
+    await nextFrame();
+    printSiteReport({
+      // Print what is on screen, including edits not yet saved.
+      site: { ...site, ...formData } as Site,
+      rows: schedules,
+      workers: data?.workers ?? [],
+    });
+  });
+
   const backLink = (
     <button onClick={() => navigate('/sites')} className="flex items-center gap-2 text-gray-400 hover:text-secondary transition-all">
       <ChevronRight size={20} />
@@ -209,8 +223,10 @@ export const SiteDetails: React.FC = () => {
           <DetailField label="نوع المصاعد" value={formData.elevatorType ?? ''} isEdit={isEditMode} onChange={v => setField({ elevatorType: v })} />
           <DetailField label="سعر الوقفة" value={formData.stopPrice ?? 0} isEdit={isEditMode} type="number" suffix="جنيه" onChange={v => setField({ stopPrice: Number(v) })} />
           <DetailField label="عدد الوقفات" value={formData.stopsCount ?? 0} isEdit={isEditMode} type="number" onChange={v => setField({ stopsCount: Number(v) })} />
-          <DetailField label="سعر المرحلة" value={formData.stagePrice ?? 0} isEdit={isEditMode} type="number" suffix="جنيه" onChange={v => setField({ stagePrice: Number(v) })} />
+          <DetailField label="نوع المرحلة" value={formData.stageType ?? ''} isEdit={isEditMode} onChange={v => setField({ stageType: v })} />
           <DetailField label="عدد المراحل" value={formData.stagesCount ?? 0} isEdit={isEditMode} type="number" onChange={v => setField({ stagesCount: Number(v) })} />
+          <DetailField label="اضافيات" value={formData.extras ?? ''} isEdit={isEditMode} onChange={v => setField({ extras: v })} className="col-span-2" />
+          <DetailField label="سعر الاضافيات" value={formData.extrasPrice ?? 0} isEdit={isEditMode} type="number" suffix="جنيه" onChange={v => setField({ extrasPrice: Number(v) })} />
           <DetailField label="نوع العميل" value={formData.customerType ?? ''} isEdit={isEditMode} type="select" options={[...CUSTOMER_TYPES]} onChange={v => setField({ customerType: v as Site['customerType'] })} />
           <DetailField label="المرحلة الحالية" value={formData.currentStage ?? ''} isEdit={isEditMode} type="select" options={[...SITE_STAGES]} onChange={v => setField({ currentStage: v as Site['currentStage'] })} />
           <div className="col-span-2">
@@ -256,21 +272,33 @@ export const SiteDetails: React.FC = () => {
 
       {/* ── Daily Work Log ────────────────────────────────────────────────── */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Calendar className="text-accent" />
             جدول العمل اليومي
           </h2>
-          <LoadingButton
-            onClick={() => saveSchedule.run()}
-            isLoading={saveSchedule.isPending}
-            loadingText="جاري الحفظ..."
-            className="btn-primary px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2"
-          >
-            <Save size={18} /> حفظ الجدول
-          </LoadingButton>
+          <div className="flex gap-2 flex-wrap">
+            <LoadingButton
+              onClick={() => print.run()}
+              isLoading={print.isPending}
+              loadingText="جاري تجهيز التقرير..."
+              title="طباعة ملف الموقع كاملاً (البيانات + كل أيام الجدول)"
+              className="bg-white border border-line text-secondary font-bold px-5 py-3 rounded-xl flex items-center gap-2 hover:bg-bg transition-colors"
+            >
+              <Printer size={18} /> طباعة ملف الموقع (PDF)
+            </LoadingButton>
+            <LoadingButton
+              onClick={() => saveSchedule.run()}
+              isLoading={saveSchedule.isPending}
+              loadingText="جاري الحفظ..."
+              className="btn-primary px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2"
+            >
+              <Save size={18} /> حفظ الجدول
+            </LoadingButton>
+          </div>
         </div>
 
+        <InlineAlert error={print.error} />
         <InlineAlert error={saveSchedule.error} onRetry={() => saveSchedule.run()} isRetrying={saveSchedule.isPending} />
         {scheduleSaved && <InlineAlert variant="success" message="تم حفظ الجدول بنجاح." />}
 

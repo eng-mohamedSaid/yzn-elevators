@@ -71,7 +71,7 @@ export const AddSiteModal: React.FC<AddSiteModalProps> = ({
             type="submit"
             isLoading={isSubmitting}
             loadingText="جاري الحفظ..."
-            className="flex-1 btn-primary py-4 rounded-xl shadow-sm"
+            className="flex-1 btn-primary py-3 rounded-xl shadow-sm"
           >
             حفظ الموقع
           </LoadingButton>
@@ -79,7 +79,7 @@ export const AddSiteModal: React.FC<AddSiteModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 bg-bg border border-line text-secondary font-bold py-4 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 bg-bg border border-line text-secondary font-bold py-3 rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
           >
             إلغاء
           </button>

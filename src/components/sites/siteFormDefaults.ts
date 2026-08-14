@@ -13,8 +13,10 @@ export const createDefaultSite = (): Partial<Site> => ({
   elevatorType:  '',
   stopPrice:     0,
   stopsCount:    0,
-  stagePrice:    0,
+  stageType:     '',
   stagesCount:   1,
+  extras:        '',
+  extrasPrice:   0,
   customerType:  'عميل',
   currentStage:  'برج',
 });

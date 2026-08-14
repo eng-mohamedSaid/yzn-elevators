@@ -64,8 +64,15 @@ export interface MaintenanceContract {
   createdAt: string;
 }
 
-/** The 4 installation stages a site can be in. */
-export type SiteStage = 'برج' | 'باب وعمود' | 'ماكينة وكابينة' | 'كهرباء';
+/** The installation stages a site (or a single work day) can be in. */
+export type SiteStage =
+  | 'برج'
+  | 'باب وعمود'
+  | 'ماكينة وكابينة'
+  | 'كهرباء'
+  | 'باب وعمود وبرج'
+  | 'باب وعمود وكمر'
+  | 'مصعد كامل';
 
 /** Per-day money adjustment on a schedule / attendance row. */
 export type AdjustType = 'إضافي' | 'خصم' | 'لا يوجد';
@@ -84,8 +91,10 @@ export interface Site {
   elevatorType: string;   // نوع المصاعد — free text typed by the manager
   stopPrice: number;      // سعر الوقفة
   stopsCount: number;     // عدد الوقفات
-  stagePrice: number;     // سعر المرحلة
+  stageType: string;      // نوع المرحلة — free text typed by the manager
   stagesCount: number;    // عدد المراحل
+  extras: string;         // اضافيات — free text
+  extrasPrice: number;    // سعر الاضافيات — جنيه
   customerType: 'شركة' | 'عميل';
   currentStage: SiteStage;
   createdAt: string;

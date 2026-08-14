@@ -1,4 +1,5 @@
-import { Worker, AttendanceRecord } from '../types';
+import { Worker, AttendanceRecord, Site, SiteSchedule } from '../types';
+import { DataError } from './errors';
 
 export interface SalaryReportTotals {
   presentDays:    number;
@@ -112,8 +113,154 @@ export const printWorkerReport = ({ worker, rows, range, totals }: ReportInput):
 </body>
 </html>`;
 
-  const win = window.open('', '_blank', 'width=900,height=1000');
-  if (!win) { alert('يرجى السماح بالنوافذ المنبثقة لطباعة التقرير'); return; }
+  openPrintWindow(html);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Site report — full site data + every day of the work schedule
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface SiteReportInput {
+  site:      Site;
+  rows:      SiteSchedule[];
+  /** Used to turn the tech/worker ids on each row into names. */
+  workers:   Worker[];
+}
+
+/**
+ * Opens the complete site file (بيانات الموقع + جدول العمل اليومي بالكامل) in a
+ * new window and triggers print → "Save as PDF", ready to send to the client.
+ * Landscape, because the daily log has 11 columns.
+ */
+export const printSiteReport = ({ site, rows, workers }: SiteReportInput): void => {
+  const today = new Date().toISOString().slice(0, 10);
+  const nameOf = (id: string) => workers.find(w => w.id === id)?.name ?? '';
+
+  const totalBonus     = rows.filter(r => r.adjustType === 'إضافي').reduce((s, r) => s + (r.bonusValue || 0), 0);
+  const totalDeduction = rows.filter(r => r.adjustType === 'خصم').reduce((s, r) => s + (r.deductionValue || 0), 0);
+  const workedDays     = rows.filter(r => r.stageType || r.accomplished?.trim()).length;
+
+  const scheduleRows = rows.map(r => {
+    const adj =
+      r.adjustType === 'إضافي' ? `<span style="color:#059669">+${money(r.bonusValue)} — ${esc(r.bonusReason)}</span>`
+      : r.adjustType === 'خصم' ? `<span style="color:#dc2626">-${money(r.deductionValue)} — ${esc(r.deductionReason)}</span>`
+      : '—';
+    const notes = [r.notes1, r.notes2, r.notes3].filter(n => n?.trim()).map(esc).join(' · ') || '—';
+    const crew  = [r.tech1Id, r.tech2Id, r.worker1Id, r.worker2Id].map(nameOf).filter(Boolean);
+    return `
+      <tr>
+        <td>${esc(r.date)}</td>
+        <td>${esc(r.day)}</td>
+        <td>${esc(r.stageType) || '—'}</td>
+        <td>${crew.length ? crew.map(esc).join('، ') : '—'}</td>
+        <td>${esc(r.accomplished) || '—'}</td>
+        <td>${notes}</td>
+        <td>${adj}</td>
+      </tr>`;
+  }).join('');
+
+  const html = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>ملف الموقع — ${esc(site.siteName)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #1f2937; margin: 0; padding: 28px; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; }
+  .sub { color: #6b7280; font-size: 13px; }
+  .brand { color: #b45309; font-weight: 800; font-style: italic; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .box { border: 1px solid #e5e7eb; border-radius: 10px; padding: 9px 12px; }
+  .box .k { font-size: 10px; color: #6b7280; margin-bottom: 3px; }
+  .box .v { font-size: 14px; font-weight: 700; word-break: break-word; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; vertical-align: top; }
+  thead th { background: #f9fafb; font-size: 10px; color: #374151; }
+  tbody tr:nth-child(even) { background: #fcfcfd; }
+  .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+  .sign { margin-top: 36px; display: flex; justify-content: space-between; font-size: 13px; color: #374151; }
+  @media print {
+    body { padding: 0; }
+    @page { size: A4 landscape; margin: 10mm; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <h1>ملف موقع العمل — <span class="brand">اليزن للمصاعد</span></h1>
+  <div class="sub">${esc(site.siteNumber)} · ${esc(site.siteName)} · تاريخ الإصدار ${today}</div>
+
+  <h2>بيانات الموقع</h2>
+  <div class="grid">
+    <div class="box"><div class="k">رقم الموقع</div><div class="v">${esc(site.siteNumber) || '—'}</div></div>
+    <div class="box"><div class="k">اسم الموقع</div><div class="v">${esc(site.siteName) || '—'}</div></div>
+    <div class="box" style="grid-column: span 2"><div class="k">العنوان</div><div class="v">${esc(site.address) || '—'}</div></div>
+    <div class="box"><div class="k">تاريخ البداية</div><div class="v">${esc(site.startDate) || '—'}</div></div>
+    <div class="box"><div class="k">تاريخ النهاية</div><div class="v">${esc(site.endDate) || '—'}</div></div>
+    <div class="box"><div class="k">إجمالي أيام العمل</div><div class="v">${site.totalDays ?? 0} يوم</div></div>
+    <div class="box"><div class="k">المرحلة الحالية</div><div class="v">${esc(site.currentStage) || '—'}</div></div>
+    <div class="box"><div class="k">عدد المصاعد</div><div class="v">${site.elevatorCount ?? 0}</div></div>
+    <div class="box"><div class="k">نوع المصاعد</div><div class="v">${esc(site.elevatorType) || '—'}</div></div>
+    <div class="box"><div class="k">سعر الوقفة</div><div class="v">${money(site.stopPrice)} جنيه</div></div>
+    <div class="box"><div class="k">عدد الوقفات</div><div class="v">${site.stopsCount ?? 0}</div></div>
+    <div class="box"><div class="k">نوع المرحلة</div><div class="v">${esc(site.stageType) || '—'}</div></div>
+    <div class="box"><div class="k">عدد المراحل</div><div class="v">${site.stagesCount ?? 0}</div></div>
+    <div class="box"><div class="k">اضافيات</div><div class="v">${esc(site.extras) || '—'}</div></div>
+    <div class="box"><div class="k">سعر الاضافيات</div><div class="v">${money(site.extrasPrice)} جنيه</div></div>
+    <div class="box"><div class="k">نوع العميل</div><div class="v">${esc(site.customerType) || '—'}</div></div>
+    <div class="box" style="grid-column: span 3"><div class="k">الموقع على الخريطة</div><div class="v" style="font-size:11px">${esc(site.mapUrl) || '—'}</div></div>
+  </div>
+
+  <h2>جدول العمل اليومي (${rows.length} يوم)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:80px">التاريخ</th>
+        <th style="width:70px">اليوم</th>
+        <th style="width:110px">نوع المرحلة</th>
+        <th style="width:180px">فريق العمل</th>
+        <th>ما تم إنجازه</th>
+        <th>الملاحظات</th>
+        <th style="width:170px">الإضافات / الخصومات</th>
+      </tr>
+    </thead>
+    <tbody>${scheduleRows || '<tr><td colspan="7" style="text-align:center;padding:16px">لا توجد أيام مسجّلة</td></tr>'}</tbody>
+  </table>
+
+  <div class="totals">
+    <div class="box"><div class="k">السعر الكلي للموقع</div><div class="v">${money(site.price)} جنيه</div></div>
+    <div class="box"><div class="k">أيام تم تسجيل عمل بها</div><div class="v">${workedDays} من ${rows.length}</div></div>
+    <div class="box"><div class="k">إجمالي الإضافات</div><div class="v" style="color:#059669">+${money(totalBonus)} جنيه</div></div>
+    <div class="box"><div class="k">إجمالي الخصومات</div><div class="v" style="color:#dc2626">-${money(totalDeduction)} جنيه</div></div>
+  </div>
+
+  <div class="sign">
+    <span>توقيع المسؤول: ______________</span>
+    <span>توقيع العميل: ______________</span>
+  </div>
+
+  <script>
+    window.onload = function () { window.print(); };
+  </script>
+</body>
+</html>`;
+
+  openPrintWindow(html);
+};
+
+/**
+ * Write a report document into a new window and let it print itself.
+ * Throws (rather than alerting) so the calling button can show the failure
+ * inline, since a blocked popup is the usual reason nothing happens.
+ */
+const openPrintWindow = (html: string): void => {
+  const win = window.open('', '_blank', 'width=1100,height=1000');
+  if (!win) {
+    throw new DataError('تعذّر فتح نافذة الطباعة. برجاء السماح بالنوافذ المنبثقة (Pop-ups) لهذا الموقع ثم المحاولة مرة أخرى.');
+  }
   win.document.open();
   win.document.write(html);
   win.document.close();

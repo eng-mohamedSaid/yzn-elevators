@@ -1,7 +1,7 @@
 import React from 'react';
 import { Site } from '../../types';
-import { Input } from '../Input';
-import { Select } from '../Select';
+import { Input, InputProps } from '../Input';
+import { Select, SelectProps } from '../Select';
 import { SITE_STAGES, CUSTOMER_TYPES, calcTotalDays } from './siteConstants';
 
 export interface SiteFormErrors {
@@ -37,8 +37,7 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
 
   return (
     <>
-      {/* ── Identity ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
         <Input
           label="اسم الموقع" required
           placeholder="اسم الموقع أو العميل"
@@ -58,12 +57,10 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
           placeholder="رابط Google Maps"
           value={data.mapUrl}
           onChange={v => set({ mapUrl: v })}
-          className="sm:col-span-2"
+          className="col-span-2"
         />
       </div>
-
-      {/* ── Dates + auto total days ────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4 mt-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
         <Input
           label="تاريخ البداية" required
           type="date"
@@ -79,19 +76,24 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
           error={errors.endDate}
         />
         {/* Read-only auto-calculated total days */}
-        <div className="space-y-1">
-          <label className="text-sm font-bold text-secondary flex items-center gap-1">
+        <div className="space-y-0.5">
+          <label className="text-xs font-bold text-secondary flex items-center gap-1">
             إجمالي أيام العمل
             <span className="text-[10px] font-normal text-accent bg-accent/10 px-1.5 py-0.5 rounded-full">تلقائي</span>
           </label>
-          <div className="w-full bg-accent/5 border border-accent/20 rounded-xl p-2.5 sm:p-3 text-sm font-bold min-h-[44px] sm:min-h-[46px] flex items-center text-primary">
+          <div className="w-full bg-accent/5 border border-accent/20 rounded-lg px-2.5 py-1.5 text-[13px] font-bold min-h-[36px] flex items-center text-primary">
             {data.totalDays ? `${data.totalDays} يوم` : <span className="text-secondary font-normal">يُحسب تلقائياً</span>}
           </div>
         </div>
+        <Select
+          label="المرحلة الحالية للموقع"
+          options={SITE_STAGES}
+          value={data.currentStage}
+          onChange={v => set({ currentStage: v as Site['currentStage'] })}
+        />
       </div>
 
-      {/* ── Elevators ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 md:gap-4 mt-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
         <Input
           label="عدد المصاعد" required
           type="number" placeholder="عدد"
@@ -101,19 +103,21 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
         />
         <Input
           label="نوع المصاعد"
-          placeholder="يكتبه المدير — مثال: جيرليس"
+          placeholder="مثال: جيرليس"
           value={data.elevatorType}
           onChange={v => set({ elevatorType: v })}
         />
-      </div>
-
-      {/* ── Pricing ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4 mt-4">
         <Input
           label="السعر الكلي" required money suffix="جنيه"
           value={data.price}
           onChange={v => set({ price: num(v) })}
           error={errors.price}
+        />
+        <Select
+          label="نوع العميل"
+          options={CUSTOMER_TYPES}
+          value={data.customerType}
+          onChange={v => set({ customerType: v as Site['customerType'] })}
         />
         <Input
           label="سعر الوقفة" money suffix="جنيه"
@@ -127,9 +131,10 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
           onChange={v => set({ stopsCount: num(v) })}
         />
         <Input
-          label="سعر المرحلة" money suffix="جنيه"
-          value={data.stagePrice}
-          onChange={v => set({ stagePrice: num(v) })}
+          label="نوع المرحلة"
+          placeholder="يكتبه المدير"
+          value={data.stageType}
+          onChange={v => set({ stageType: v })}
         />
         <Input
           label="عدد المراحل"
@@ -137,21 +142,17 @@ export const SiteFormFields: React.FC<SiteFormFieldsProps> = ({
           value={data.stagesCount}
           onChange={v => set({ stagesCount: num(v) })}
         />
-      </div>
-
-      {/* ── Classification ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 md:gap-4 mt-4">
-        <Select
-          label="نوع العميل"
-          options={CUSTOMER_TYPES}
-          value={data.customerType}
-          onChange={v => set({ customerType: v as Site['customerType'] })}
+        <Input
+          label="اضافيات"
+          placeholder="تفاصيل الاضافيات"
+          value={data.extras}
+          onChange={v => set({ extras: v })}
+          className="col-span-2"
         />
-        <Select
-          label="المرحلة الحالية للموقع"
-          options={SITE_STAGES}
-          value={data.currentStage}
-          onChange={v => set({ currentStage: v as Site['currentStage'] })}
+        <Input
+          label="سعر الاضافيات" money suffix="جنيه"
+          value={data.extrasPrice}
+          onChange={v => set({ extrasPrice: num(v) })}
         />
       </div>
     </>

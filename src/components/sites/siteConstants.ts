@@ -1,8 +1,16 @@
 import { differenceInDays } from 'date-fns';
 import { Site, SiteStage, AdjustType } from '../../types';
 
-/** The 4 installation stages (المرحلة الحالية / نوع المرحلة). */
-export const SITE_STAGES: SiteStage[] = ['برج', 'باب وعمود', 'ماكينة وكابينة', 'كهرباء'];
+/** The installation stages (المرحلة الحالية للموقع / مرحلة اليوم في الجدول). */
+export const SITE_STAGES: SiteStage[] = [
+  'برج',
+  'باب وعمود',
+  'ماكينة وكابينة',
+  'كهرباء',
+  'باب وعمود وبرج',
+  'باب وعمود وكمر',
+  'مصعد كامل',
+];
 
 /** Customer types (نوع العميل). */
 export const CUSTOMER_TYPES: Site['customerType'][] = ['عميل', 'شركة'];

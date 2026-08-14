@@ -96,8 +96,10 @@ create table if not exists public.sites (
   "elevatorType" text,
   "stopPrice" numeric,
   "stopsCount" numeric,
-  "stagePrice" numeric,
+  "stageType" text,
   "stagesCount" numeric,
+  "extras" text,
+  "extrasPrice" numeric,
   "customerType" text,
   "currentStage" text,
   "createdAt" text
