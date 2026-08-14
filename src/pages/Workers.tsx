@@ -192,6 +192,7 @@ export const Workers: React.FC = () => {
         onSubmit={create.run}
         isSubmitting={create.isPending}
         submitError={create.error}
+        existingNames={workers.map(w => w.name)}
       />
 
       <DownloadRangeModal

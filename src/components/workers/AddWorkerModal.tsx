@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { Worker } from '../../types';
 import { Modal } from '../Modal';
 import { LoadingButton } from '../ui/LoadingButton';
@@ -16,6 +17,8 @@ interface AddWorkerModalProps {
   isSubmitting?: boolean;
   /** Failure returned by the create request, shown above the buttons. */
   submitError?: AppError | null;
+  /** Names already in the system — used to warn about an accidental re-add. */
+  existingNames?: string[];
 }
 
 const validate = (data: Partial<Worker>): WorkerFormErrors => {
@@ -31,8 +34,15 @@ const hasErrors = (e: WorkerFormErrors) => Object.keys(e).length > 0;
 
 export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({
   isOpen, onClose, formData, onChange, onSubmit, isSubmitting = false, submitError = null,
+  existingNames = [],
 }) => {
   const [errors, setErrors] = useState<WorkerFormErrors>({});
+
+  // Two real people can share a name, so this warns rather than blocks — it is
+  // there to catch a re-add after a submit the manager thought had failed.
+  const typedName = (formData.name ?? '').trim();
+  const isDuplicateName = typedName.length > 0 &&
+    existingNames.some(n => n.trim() === typedName);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +72,16 @@ export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({
           </div>
         )}
         <WorkerFormFields data={formData} onChange={handleChange} errors={errors} />
+
+        {isDuplicateName && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-2 text-amber-700 text-sm font-bold">
+            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
+            <span className="leading-relaxed">
+              يوجد موظف بنفس الاسم «{typedName}» مسجّل بالفعل. إذا كنت أضفته من قبل فلا تضغط حفظ مرة أخرى حتى لا يتكرر.
+            </span>
+          </div>
+        )}
+
         <InlineAlert error={submitError} className="mt-4" />
 
         <div className="flex gap-3 pt-4">

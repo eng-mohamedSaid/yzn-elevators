@@ -199,6 +199,7 @@ export const SiteDetails: React.FC = () => {
       {/* ── Site Data ─────────────────────────────────────────────────────── */}
       <div className="card bg-white">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          <DetailField label="اسم الموقع" value={formData.siteName ?? ''} isEdit={isEditMode} onChange={v => setField({ siteName: v })} className="col-span-2" />
           <DetailField label="العنوان" value={formData.address ?? ''} isEdit={isEditMode} onChange={v => setField({ address: v })} className="col-span-2" />
           <DetailField label="تاريخ البداية" value={formData.startDate ?? ''} isEdit={isEditMode} type="date" onChange={v => setField({ startDate: v })} />
           <DetailField label="تاريخ النهاية" value={formData.endDate ?? ''} isEdit={isEditMode} type="date" onChange={v => setField({ endDate: v })} />
@@ -213,15 +214,26 @@ export const SiteDetails: React.FC = () => {
           <DetailField label="نوع العميل" value={formData.customerType ?? ''} isEdit={isEditMode} type="select" options={[...CUSTOMER_TYPES]} onChange={v => setField({ customerType: v as Site['customerType'] })} />
           <DetailField label="المرحلة الحالية" value={formData.currentStage ?? ''} isEdit={isEditMode} type="select" options={[...SITE_STAGES]} onChange={v => setField({ currentStage: v as Site['currentStage'] })} />
           <div className="col-span-2">
-            <label className="text-[10px] font-bold text-secondary uppercase block mb-1">الموقع على الخريطة</label>
-            {site.mapUrl ? (
-              <a href={site.mapUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-accent font-bold text-sm bg-bg border border-line px-4 py-2 rounded-lg w-fit hover:bg-line transition-colors">
-                <Map size={16} /> فتح Google Maps
-              </a>
+            {isEditMode ? (
+              <DetailField
+                label="رابط الموقع على الخريطة"
+                value={formData.mapUrl ?? ''}
+                isEdit
+                onChange={v => setField({ mapUrl: v })}
+              />
             ) : (
-              <div className="flex items-center gap-2 text-gray-400 font-bold text-sm bg-bg border border-line px-4 py-2 rounded-lg w-fit">
-                <Map size={16} /> لا يوجد
-              </div>
+              <>
+                <label className="text-[10px] font-bold text-secondary uppercase block mb-1">الموقع على الخريطة</label>
+                {site.mapUrl ? (
+                  <a href={site.mapUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-accent font-bold text-sm bg-bg border border-line px-4 py-2 rounded-lg w-fit hover:bg-line transition-colors">
+                    <Map size={16} /> فتح Google Maps
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-2 text-gray-400 font-bold text-sm bg-bg border border-line px-4 py-2 rounded-lg w-fit">
+                    <Map size={16} /> لا يوجد
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

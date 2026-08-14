@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronRight, Users, Calendar, Printer, Save, Edit3, Briefcase } from 'lucide-react';
+import { ChevronRight, Users, Calendar, Printer, Save, Edit3, Briefcase, Trash2 } from 'lucide-react';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -11,6 +11,7 @@ import { DetailField } from '../components/DetailField';
 import { WORKER_ROLES, SALARY_TYPES, ADJUST_TYPES, getWorkLocations } from '../components/workers/workerConstants';
 import { printWorkerReport, SalaryReportTotals } from '../services/reportPrint';
 
+import { ConfirmDeleteModal } from '../components/shared/ConfirmDeleteModal';
 import { LoadingState }   from '../components/ui/LoadingState';
 import { ErrorState }     from '../components/ui/ErrorState';
 import { InlineAlert }    from '../components/ui/InlineAlert';
@@ -87,6 +88,7 @@ export const WorkerDetails: React.FC = () => {
   const [formData, setFormData]     = useState<Partial<Worker>>({});
   const [attendanceSaved, setAttendanceSaved] = useState(false);
   const [workerSaved, setWorkerSaved]         = useState(false);
+  const [isConfirmDelete, setIsConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -111,6 +113,18 @@ export const WorkerDetails: React.FC = () => {
     setIsEditMode(false);
     setWorkerSaved(true);
     setTimeout(() => setWorkerSaved(false), 4000);
+  });
+
+  const removeWorker = useAsyncAction(async () => {
+    if (!worker) return;
+    // Drop the worker's attendance rows too, so deleted staff don't leave
+    // orphaned records behind in the attendance table.
+    const allAttendance = await dataService.getAll<AttendanceRecord>('attendance');
+    for (const row of allAttendance.filter(a => a.workerId === worker.id)) {
+      await dataService.delete('attendance', row.id);
+    }
+    await dataService.delete('workers', worker.id);
+    navigate('/workers');
   });
 
   // ── Totals (salary-type aware) ──────────────────────────────────────────────
@@ -197,6 +211,13 @@ export const WorkerDetails: React.FC = () => {
           >
             <Printer size={20} />
           </LoadingButton>
+          <button
+            onClick={() => { removeWorker.clearError(); setIsConfirmDelete(true); }}
+            title="حذف الموظف"
+            className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
+          >
+            <Trash2 size={20} />
+          </button>
         </div>
       </div>
 
@@ -209,6 +230,7 @@ export const WorkerDetails: React.FC = () => {
             <Briefcase size={14} className="text-accent" /> البيانات الشخصية
           </h3>
           <div className="space-y-4">
+            <DetailField label="اسم الموظف" value={formData.name ?? ''} isEdit={isEditMode} onChange={v => setFormData({ ...formData, name: v })} />
             <DetailField label="نوع الموظف" value={formData.role ?? ''} isEdit={isEditMode} type="select" options={[...WORKER_ROLES]} onChange={v => setFormData({ ...formData, role: v as Worker['role'] })} />
             <DetailField label="نوع الراتب" value={formData.salaryType ?? ''} isEdit={isEditMode} type="select" options={[...SALARY_TYPES]} onChange={v => setFormData({ ...formData, salaryType: v as Worker['salaryType'] })} />
             <DetailField label="قيمة الراتب" value={formData.baseSalary ?? 0} isEdit={isEditMode} type="number" suffix="جنيه" onChange={v => setFormData({ ...formData, baseSalary: Number(v) })} />
@@ -337,6 +359,15 @@ export const WorkerDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={isConfirmDelete}
+        onClose={() => setIsConfirmDelete(false)}
+        onConfirm={removeWorker.run}
+        entityLabel={`الموظف «${worker.name}» وكل سجلات حضوره`}
+        isDeleting={removeWorker.isPending}
+        deleteError={removeWorker.error}
+      />
     </div>
   );
 };
